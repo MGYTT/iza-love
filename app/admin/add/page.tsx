@@ -8,10 +8,10 @@ import {
   ArrowLeft, Loader2,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useSongStore } from "@/lib/store";
 import { toast } from "sonner";
-import type { ItunesTrack, LyricLine, HighlightedWord } from "@/lib/types";
 import Link from "next/link";
+import { createSong } from "@/lib/songs-db";
+import type { ItunesTrack, LyricLine, HighlightedWord } from "@/lib/types";
 
 /* ─────────────────────────────────────────────────────
    ITUNES SEARCH
@@ -33,10 +33,7 @@ async function searchItunes(query: string): Promise<ItunesTrack[]> {
    LYRIC LINE EDITOR
 ───────────────────────────────────────────────────── */
 function LyricLineEditor({
-  line,
-  index,
-  onChange,
-  onRemove,
+  line, index, onChange, onRemove,
 }: {
   line: LyricLine;
   index: number;
@@ -50,10 +47,7 @@ function LyricLineEditor({
     e.preventDefault();
     onChange({
       ...line,
-      highlighted: [
-        ...(line.highlighted ?? []),
-        { word: "", note: "", color: "gold" },
-      ],
+      highlighted: [...(line.highlighted ?? []), { word: "", note: "", color: "gold" }],
     });
     setOpen(true);
   };
@@ -71,204 +65,83 @@ function LyricLineEditor({
   };
 
   return (
-    <div
-      style={{
-        background: "rgba(22,8,14,0.7)",
-        border: `1px solid ${hasHL ? "rgba(212,168,83,0.2)" : "rgba(240,160,184,0.09)"}`,
-        borderRadius: "0.75rem",
-        padding: "0.7rem 0.9rem",
-        marginBottom: "0.45rem",
-        transition: "border-color 0.2s",
-      }}
-    >
-      {/* ── Main row ── */}
+    <div style={{
+      background: "rgba(22,8,14,0.7)",
+      border: `1px solid ${hasHL ? "rgba(212,168,83,0.2)" : "rgba(240,160,184,0.09)"}`,
+      borderRadius: "0.75rem", padding: "0.7rem 0.9rem",
+      marginBottom: "0.45rem", transition: "border-color 0.2s",
+    }}>
       <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
-
-        {/* Time input */}
         <div style={{ display: "flex", alignItems: "center", gap: "3px", flexShrink: 0 }}>
           <input
-            type="number"
-            min={0}
-            step={0.5}
-            value={line.time}
-            onChange={(e) =>
-              onChange({ ...line, time: parseFloat(e.target.value) || 0 })
-            }
-            title="Czas w sekundach"
-            aria-label="Czas (sekundy)"
-            style={{
-              ...inputSm,
-              width: "58px",
-              textAlign: "center",
-              color: "rgba(212,168,83,0.85)",
-            }}
+            type="number" min={0} step={0.5} value={line.time}
+            onChange={e => onChange({ ...line, time: parseFloat(e.target.value) || 0 })}
+            title="Czas w sekundach" aria-label="Czas (sekundy)"
+            style={{ ...inputSm, width: "58px", textAlign: "center", color: "rgba(212,168,83,0.85)" }}
           />
           <span style={{ color: "rgba(240,160,184,0.2)", fontSize: "0.7rem" }}>s</span>
         </div>
 
-        {/* Text */}
         <input
-          type="text"
-          value={line.text}
-          onChange={(e) => onChange({ ...line, text: e.target.value })}
+          type="text" value={line.text}
+          onChange={e => onChange({ ...line, text: e.target.value })}
           placeholder={`Wers ${index + 1}...`}
           style={{ ...inputSm, flex: 1 }}
         />
 
-        {/* Star — add highlight */}
-        <button
-          onClick={addHighlight}
-          title="Oznacz ważne słowo w tym wersie"
-          type="button"
-          style={{
-            background: "none", border: "none", cursor: "pointer",
-            color: hasHL ? "#d4a853" : "rgba(240,160,184,0.2)",
-            transition: "color 0.2s, transform 0.2s",
-            padding: "0.2rem",
-            flexShrink: 0,
-          }}
-          onMouseEnter={e => {
-            (e.currentTarget as HTMLButtonElement).style.color = "#d4a853";
-            (e.currentTarget as HTMLButtonElement).style.transform = "scale(1.15)";
-          }}
-          onMouseLeave={e => {
-            (e.currentTarget as HTMLButtonElement).style.color =
-              hasHL ? "#d4a853" : "rgba(240,160,184,0.2)";
-            (e.currentTarget as HTMLButtonElement).style.transform = "scale(1)";
-          }}
+        <button onClick={addHighlight} title="Oznacz ważne słowo" type="button"
+          style={{ background: "none", border: "none", cursor: "pointer", color: hasHL ? "#d4a853" : "rgba(240,160,184,0.2)", transition: "color 0.2s, transform 0.2s", padding: "0.2rem", flexShrink: 0 }}
+          onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = "#d4a853"; (e.currentTarget as HTMLButtonElement).style.transform = "scale(1.15)"; }}
+          onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.color = hasHL ? "#d4a853" : "rgba(240,160,184,0.2)"; (e.currentTarget as HTMLButtonElement).style.transform = "scale(1)"; }}
         >
           <Star size={13} fill={hasHL ? "#d4a853" : "none"} />
         </button>
 
-        {/* Expand highlights */}
         {hasHL && (
-          <button
-            onClick={() => setOpen((o) => !o)}
-            type="button"
-            style={{
-              background: "none", border: "none", cursor: "pointer",
-              color: "rgba(240,160,184,0.3)",
-              padding: "0.2rem", flexShrink: 0,
-              transition: "color 0.2s",
-            }}
-            onMouseEnter={e =>
-              (e.currentTarget as HTMLButtonElement).style.color = "rgba(240,160,184,0.7)"
-            }
-            onMouseLeave={e =>
-              (e.currentTarget as HTMLButtonElement).style.color = "rgba(240,160,184,0.3)"
-            }
+          <button onClick={() => setOpen(o => !o)} type="button"
+            style={{ background: "none", border: "none", cursor: "pointer", color: "rgba(240,160,184,0.3)", padding: "0.2rem", flexShrink: 0, transition: "color 0.2s" }}
+            onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.color = "rgba(240,160,184,0.7)"}
+            onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.color = "rgba(240,160,184,0.3)"}
           >
             {open ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
           </button>
         )}
 
-        {/* Remove line */}
-        <button
-          onClick={onRemove}
-          type="button"
-          title="Usuń wers"
-          style={{
-            background: "none", border: "none", cursor: "pointer",
-            color: "rgba(240,100,100,0.25)",
-            padding: "0.2rem", flexShrink: 0,
-            transition: "color 0.2s",
-          }}
-          onMouseEnter={e =>
-            (e.currentTarget as HTMLButtonElement).style.color = "rgba(240,100,100,0.6)"
-          }
-          onMouseLeave={e =>
-            (e.currentTarget as HTMLButtonElement).style.color = "rgba(240,100,100,0.25)"
-          }
+        <button onClick={onRemove} type="button" title="Usuń wers"
+          style={{ background: "none", border: "none", cursor: "pointer", color: "rgba(240,100,100,0.25)", padding: "0.2rem", flexShrink: 0, transition: "color 0.2s" }}
+          onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.color = "rgba(240,100,100,0.6)"}
+          onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.color = "rgba(240,100,100,0.25)"}
         >
           <X size={13} />
         </button>
       </div>
 
-      {/* ── Highlights ── */}
       <AnimatePresence>
         {open && hasHL && (
           <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: "auto", opacity: 1 }}
+            initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
             transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
             style={{ overflow: "hidden" }}
           >
-            <div
-              style={{
-                marginTop: "0.65rem",
-                paddingTop: "0.65rem",
-                borderTop: "1px solid rgba(212,168,83,0.1)",
-                display: "flex",
-                flexDirection: "column",
-                gap: "0.4rem",
-              }}
-            >
-              {/* Header */}
-              <p style={{
-                fontFamily: "'DM Sans', sans-serif",
-                fontSize: "0.64rem",
-                letterSpacing: "0.1em",
-                textTransform: "uppercase",
-                color: "rgba(212,168,83,0.45)",
-                marginBottom: "0.1rem",
-              }}>
+            <div style={{ marginTop: "0.65rem", paddingTop: "0.65rem", borderTop: "1px solid rgba(212,168,83,0.1)", display: "flex", flexDirection: "column", gap: "0.4rem" }}>
+              <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "0.64rem", letterSpacing: "0.1em", textTransform: "uppercase", color: "rgba(212,168,83,0.45)", marginBottom: "0.1rem" }}>
                 ✦ Ważne słowa — Iza zobaczy Twoją notatkę po kliknięciu
               </p>
-
               {(line.highlighted ?? []).map((hl, hi) => (
-                <div
-                  key={hi}
-                  style={{
-                    display: "flex", gap: "0.4rem", alignItems: "center",
-                  }}
-                >
+                <div key={hi} style={{ display: "flex", gap: "0.4rem", alignItems: "center" }}>
                   <Star size={10} style={{ color: "#d4a853", flexShrink: 0 }} />
-
-                  {/* Word */}
-                  <input
-                    value={hl.word}
-                    onChange={(e) => updateHL(hi, "word", e.target.value)}
-                    placeholder="Słowo z wersu..."
-                    style={{ ...inputXs, width: "120px" }}
-                  />
-
-                  {/* Note */}
-                  <input
-                    value={hl.note}
-                    onChange={(e) => updateHL(hi, "note", e.target.value)}
-                    placeholder="Twoja notatka dla Izy..."
-                    style={{ ...inputXs, flex: 1 }}
-                  />
-
-                  {/* Color */}
-                  <select
-                    value={hl.color}
-                    onChange={(e) =>
-                      updateHL(hi, "color", e.target.value as HighlightedWord["color"])
-                    }
-                    style={{ ...inputXs, width: "82px", cursor: "pointer" }}
-                  >
+                  <input value={hl.word} onChange={e => updateHL(hi, "word", e.target.value)} placeholder="Słowo z wersu..." style={{ ...inputXs, width: "120px" }} />
+                  <input value={hl.note} onChange={e => updateHL(hi, "note", e.target.value)} placeholder="Twoja notatka dla Izy..." style={{ ...inputXs, flex: 1 }} />
+                  <select value={hl.color} onChange={e => updateHL(hi, "color", e.target.value as HighlightedWord["color"])} style={{ ...inputXs, width: "82px", cursor: "pointer" }}>
                     <option value="gold">🟡 złoty</option>
                     <option value="pink">🩷 różowy</option>
                     <option value="rose">🌹 rose</option>
                   </select>
-
-                  {/* Remove highlight */}
-                  <button
-                    onClick={() => removeHL(hi)}
-                    type="button"
-                    style={{
-                      background: "none", border: "none", cursor: "pointer",
-                      color: "rgba(240,100,100,0.25)", padding: "0.2rem",
-                      flexShrink: 0, transition: "color 0.2s",
-                    }}
-                    onMouseEnter={e =>
-                      (e.currentTarget as HTMLButtonElement).style.color = "rgba(240,100,100,0.6)"
-                    }
-                    onMouseLeave={e =>
-                      (e.currentTarget as HTMLButtonElement).style.color = "rgba(240,100,100,0.25)"
-                    }
+                  <button onClick={() => removeHL(hi)} type="button"
+                    style={{ background: "none", border: "none", cursor: "pointer", color: "rgba(240,100,100,0.25)", padding: "0.2rem", flexShrink: 0, transition: "color 0.2s" }}
+                    onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.color = "rgba(240,100,100,0.6)"}
+                    onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.color = "rgba(240,100,100,0.25)"}
                   >
                     <X size={11} />
                   </button>
@@ -283,29 +156,15 @@ function LyricLineEditor({
 }
 
 /* ─────────────────────────────────────────────────────
-   SECTION LABEL
+   HELPERS
 ───────────────────────────────────────────────────── */
 function SectionLabel({ number, label }: { number: string; label: string }) {
   return (
-    <div style={{
-      display: "flex", alignItems: "center", gap: "0.75rem",
-      marginBottom: "1.1rem",
-    }}>
-      <div style={{
-        width: "28px", height: "28px", borderRadius: "50%", flexShrink: 0,
-        background: "rgba(212,168,83,0.1)",
-        border: "1px solid rgba(212,168,83,0.3)",
-        display: "flex", alignItems: "center", justifyContent: "center",
-        fontFamily: "'Cormorant Garamond', serif",
-        fontSize: "0.95rem", color: "#d4a853",
-      }}>
+    <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "1.1rem" }}>
+      <div style={{ width: "28px", height: "28px", borderRadius: "50%", flexShrink: 0, background: "rgba(212,168,83,0.1)", border: "1px solid rgba(212,168,83,0.3)", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Cormorant Garamond', serif", fontSize: "0.95rem", color: "#d4a853" }}>
         {number}
       </div>
-      <h2 style={{
-        fontFamily: "'Cormorant Garamond', serif",
-        fontSize: "1.25rem", fontWeight: 400,
-        color: "rgba(247,205,216,0.85)",
-      }}>
+      <h2 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "1.25rem", fontWeight: 400, color: "rgba(247,205,216,0.85)" }}>
         {label}
       </h2>
     </div>
@@ -314,14 +173,7 @@ function SectionLabel({ number, label }: { number: string; label: string }) {
 
 function FieldLabel({ children }: { children: React.ReactNode }) {
   return (
-    <p style={{
-      fontFamily: "'DM Sans', sans-serif",
-      fontSize: "0.68rem",
-      letterSpacing: "0.1em",
-      textTransform: "uppercase",
-      color: "rgba(240,160,184,0.3)",
-      marginBottom: "0.4rem",
-    }}>
+    <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "0.68rem", letterSpacing: "0.1em", textTransform: "uppercase", color: "rgba(240,160,184,0.3)", marginBottom: "0.4rem" }}>
       {children}
     </p>
   );
@@ -331,11 +183,9 @@ function FieldLabel({ children }: { children: React.ReactNode }) {
    MAIN PAGE
 ───────────────────────────────────────────────────── */
 export default function AddSongPage() {
-  const router       = useRouter();
-  const { addSong }  = useSongStore();
+  const router = useRouter();
   const [authed, setAuthed] = useState(false);
 
-  /* Auth guard */
   useEffect(() => {
     if (sessionStorage.getItem("admin-auth") !== "true") {
       router.replace("/admin");
@@ -344,20 +194,16 @@ export default function AddSongPage() {
     }
   }, [router]);
 
-  /* iTunes search */
   const [query,     setQuery]     = useState("");
   const [results,   setResults]   = useState<ItunesTrack[]>([]);
   const [searching, setSearching] = useState(false);
   const [selected,  setSelected]  = useState<ItunesTrack | null>(null);
 
-  /* Song form */
-  const [memoryDate,       setMemoryDate]       = useState("");
-  const [shortDescription, setShortDescription] = useState("");
-  const [whyOurSong,       setWhyOurSong]       = useState("");
-  const [lyrics,           setLyrics]           = useState<LyricLine[]>([
-    { time: 0, text: "" },
-  ]);
-  const [saving, setSaving] = useState(false);
+  const [memoryDate,        setMemoryDate]        = useState("");
+  const [shortDescription,  setShortDescription]  = useState("");
+  const [whyOurSong,        setWhyOurSong]        = useState("");
+  const [lyrics,            setLyrics]            = useState<LyricLine[]>([{ time: 0, text: "" }]);
+  const [saving,            setSaving]            = useState(false);
 
   if (!authed) return null;
 
@@ -380,18 +226,19 @@ export default function AddSongPage() {
 
   const addLyricLine = () => {
     const lastTime = lyrics[lyrics.length - 1]?.time ?? 0;
-    setLyrics((l) => [...l, { time: Math.round(lastTime + 4), text: "" }]);
+    setLyrics(l => [...l, { time: Math.round(lastTime + 4), text: "" }]);
   };
 
-  const updateLine  = (i: number, updated: LyricLine) =>
-    setLyrics((l) => l.map((line, idx) => (idx === i ? updated : line)));
+  const updateLine = (i: number, updated: LyricLine) =>
+    setLyrics(l => l.map((line, idx) => idx === i ? updated : line));
 
-  const removeLine  = (i: number) =>
-    setLyrics((l) => l.filter((_, idx) => idx !== i));
+  const removeLine = (i: number) =>
+    setLyrics(l => l.filter((_, idx) => idx !== i));
 
+  /* ── Save → Supabase ── */
   const handleSave = async () => {
-    if (!selected) { toast.error("Wybierz piosenkę z wyników!"); return; }
-    if (!memoryDate.trim()) { toast.error("Podaj datę wspomnienia!"); return; }
+    if (!selected)              { toast.error("Wybierz piosenkę z wyników!"); return; }
+    if (!memoryDate.trim())     { toast.error("Podaj datę wspomnienia!"); return; }
     if (!shortDescription.trim()) { toast.error("Dodaj krótki opis na osi czasu!"); return; }
 
     setSaving(true);
@@ -404,227 +251,112 @@ export default function AddSongPage() {
       .replace(/^-+|-+$/g, "")
       .slice(0, 80);
 
-    const cleanLyrics = lyrics.filter((l) => l.text.trim());
+    const cleanLyrics = lyrics.filter(l => l.text.trim());
 
-    addSong({
-      slug,
-      title:           selected.trackName,
-      artist:          selected.artistName,
-      album:           selected.collectionName ?? "",
-      coverUrl:        selected.artworkUrl100 ?? "",
-      itunesId:        selected.trackId,
-      previewUrl:      selected.previewUrl ?? null,
-      itunesUrl:       selected.trackViewUrl,
-      date:            new Date().toISOString().split("T")[0],
-      memoryDate:      memoryDate.trim(),
-      shortDescription: shortDescription.trim(),
-      whyOurSong:      whyOurSong.trim(),
-      comments:        [],
-      lyrics:          cleanLyrics,
-    });
+    try {
+      await createSong({
+        slug,
+        title:            selected.trackName,
+        artist:           selected.artistName,
+        album:            selected.collectionName ?? "",
+        coverUrl:         selected.artworkUrl100 ?? "",
+        itunesId:         selected.trackId,
+        previewUrl:       selected.previewUrl ?? null,
+        itunesUrl:        selected.trackViewUrl,
+        date:             new Date().toISOString().split("T")[0],
+        memoryDate:       memoryDate.trim(),
+        shortDescription: shortDescription.trim(),
+        whyOurSong:       whyOurSong.trim(),
+        comments:         [],
+        lyrics:           cleanLyrics,
+      });
 
-    toast.success(`„${selected.trackName}" dodano do historii Izy ♥`);
-    setTimeout(() => router.push("/admin/dashboard"), 800);
+      toast.success(`„${selected.trackName}" dodano do historii Izy ♥`);
+      setTimeout(() => router.push("/admin/dashboard"), 800);
+    } catch (err) {
+      console.error(err);
+      toast.error("Błąd zapisu do Supabase. Sprawdź konsolę.");
+      setSaving(false);
+    }
   };
 
-  /* ─────────────────────────── RENDER ─────────────────────────── */
+  /* ─────────── RENDER ─────────── */
   return (
-    <main style={{
-      maxWidth: "820px",
-      margin: "0 auto",
-      padding: "2.5rem 1.5rem 7rem",
-      position: "relative",
-    }}>
+    <main style={{ maxWidth: "820px", margin: "0 auto", padding: "2.5rem 1.5rem 7rem", position: "relative" }}>
 
-      {/* Background glow */}
-      <div aria-hidden style={{
-        position: "fixed", inset: 0, pointerEvents: "none", zIndex: -1,
-        background: "radial-gradient(ellipse 50% 40% at 50% 20%, rgba(212,168,83,0.06), transparent)",
-      }} />
+      <div aria-hidden style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: -1, background: "radial-gradient(ellipse 50% 40% at 50% 20%, rgba(212,168,83,0.06), transparent)" }} />
 
       {/* ── Header ── */}
-      <motion.div
-        initial={{ opacity: 0, y: -12 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        style={{ marginBottom: "2.25rem" }}
-      >
-        <Link
-          href="/admin/dashboard"
-          style={{
-            display: "inline-flex", alignItems: "center", gap: "0.4rem",
-            textDecoration: "none",
-            fontFamily: "'DM Sans', sans-serif",
-            fontSize: "0.78rem",
-            color: "rgba(240,160,184,0.35)",
-            marginBottom: "1.1rem",
-            transition: "color 0.2s",
-          }}
-          onMouseEnter={e =>
-            (e.currentTarget as HTMLAnchorElement).style.color = "rgba(240,160,184,0.75)"
-          }
-          onMouseLeave={e =>
-            (e.currentTarget as HTMLAnchorElement).style.color = "rgba(240,160,184,0.35)"
-          }
+      <motion.div initial={{ opacity: 0, y: -12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} style={{ marginBottom: "2.25rem" }}>
+        <Link href="/admin/dashboard"
+          style={{ display: "inline-flex", alignItems: "center", gap: "0.4rem", textDecoration: "none", fontFamily: "'DM Sans', sans-serif", fontSize: "0.78rem", color: "rgba(240,160,184,0.35)", marginBottom: "1.1rem", transition: "color 0.2s" }}
+          onMouseEnter={e => (e.currentTarget as HTMLAnchorElement).style.color = "rgba(240,160,184,0.75)"}
+          onMouseLeave={e => (e.currentTarget as HTMLAnchorElement).style.color = "rgba(240,160,184,0.35)"}
         >
           <ArrowLeft size={13} /> Powrót do panelu
         </Link>
-
-        <h1 style={{
-          fontFamily: "'Cormorant Garamond', serif",
-          fontSize: "clamp(1.8rem, 4vw, 2.4rem)",
-          fontWeight: 300,
-          color: "#f7cdd8",
-          lineHeight: 1.1,
-        }}>
+        <h1 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "clamp(1.8rem, 4vw, 2.4rem)", fontWeight: 300, color: "#f7cdd8", lineHeight: 1.1 }}>
           Dodaj nowy rozdział
         </h1>
-        <p style={{
-          fontFamily: "'DM Sans', sans-serif",
-          fontSize: "0.82rem",
-          color: "rgba(240,160,184,0.3)",
-          marginTop: "0.4rem",
-        }}>
+        <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "0.82rem", color: "rgba(240,160,184,0.3)", marginTop: "0.4rem" }}>
           Znajdź piosenkę, napisz swój list do Izy i oznacz ważne słowa
         </p>
       </motion.div>
 
-      {/* ══════════════════════════════════════════════
-          STEP 1 — iTunes Search
-      ══════════════════════════════════════════════ */}
-      <motion.section
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.55, delay: 0.05 }}
-        style={{ marginBottom: "2rem" }}
-      >
+      {/* ══ STEP 1 — iTunes Search ══ */}
+      <motion.section initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.55, delay: 0.05 }} style={{ marginBottom: "2rem" }}>
         <SectionLabel number="1" label="Znajdź piosenkę" />
 
         {selected ? (
-          /* ── Selected track card ── */
           <motion.div
-            initial={{ opacity: 0, scale: 0.97 }}
-            animate={{ opacity: 1, scale: 1 }}
+            initial={{ opacity: 0, scale: 0.97 }} animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.3 }}
-            style={{
-              display: "flex", alignItems: "center", gap: "1rem",
-              background: "rgba(22,8,14,0.75)",
-              border: "1px solid rgba(212,168,83,0.2)",
-              borderRadius: "1rem",
-              padding: "1rem 1.1rem",
-            }}
+            style={{ display: "flex", alignItems: "center", gap: "1rem", background: "rgba(22,8,14,0.75)", border: "1px solid rgba(212,168,83,0.2)", borderRadius: "1rem", padding: "1rem 1.1rem" }}
           >
-            {/* Cover */}
-            <div style={{
-              position: "relative", width: "60px", height: "60px",
-              borderRadius: "0.6rem", overflow: "hidden", flexShrink: 0,
-            }}>
+            <div style={{ position: "relative", width: "60px", height: "60px", borderRadius: "0.6rem", overflow: "hidden", flexShrink: 0 }}>
               {selected.artworkUrl100 && (
-                <Image
-                  src={selected.artworkUrl100}
-                  alt={selected.trackName}
-                  fill
-                  className="object-cover"
-                  sizes="60px"
-                  unoptimized
-                />
+                <Image src={selected.artworkUrl100} alt={selected.trackName} fill className="object-cover" sizes="60px" unoptimized />
               )}
             </div>
-
-            {/* Info */}
             <div style={{ flex: 1, minWidth: 0 }}>
-              <p style={{
-                fontFamily: "'Cormorant Garamond', serif",
-                fontSize: "1.2rem", color: "#f7cdd8",
-                overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
-              }}>
+              <p style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "1.2rem", color: "#f7cdd8", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                 {selected.trackName}
               </p>
-              <p style={{
-                fontFamily: "'DM Sans', sans-serif",
-                fontSize: "0.75rem", color: "rgba(240,160,184,0.45)",
-              }}>
+              <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "0.75rem", color: "rgba(240,160,184,0.45)" }}>
                 {selected.artistName} · {selected.collectionName}
               </p>
               {selected.previewUrl ? (
                 <div style={{ marginTop: "0.35rem", display: "flex", alignItems: "center", gap: "0.4rem" }}>
-                  <span style={{
-                    fontFamily: "'DM Sans', sans-serif", fontSize: "0.63rem",
-                    color: "rgba(100,220,130,0.7)",
-                    background: "rgba(100,220,130,0.08)",
-                    border: "1px solid rgba(100,220,130,0.15)",
-                    borderRadius: "999px", padding: "1px 7px",
-                  }}>
+                  <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "0.63rem", color: "rgba(100,220,130,0.7)", background: "rgba(100,220,130,0.08)", border: "1px solid rgba(100,220,130,0.15)", borderRadius: "999px", padding: "1px 7px" }}>
                     ▶ Preview 30s dostępne
                   </span>
-                  <audio
-                    src={selected.previewUrl}
-                    controls
-                    style={{ height: "22px", opacity: 0.6, maxWidth: "140px" }}
-                  />
+                  <audio src={selected.previewUrl} controls style={{ height: "22px", opacity: 0.6, maxWidth: "140px" }} />
                 </div>
               ) : (
-                <p style={{
-                  fontFamily: "'DM Sans', sans-serif",
-                  fontSize: "0.63rem", color: "rgba(240,160,184,0.2)",
-                  marginTop: "0.3rem",
-                }}>
+                <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "0.63rem", color: "rgba(240,160,184,0.2)", marginTop: "0.3rem" }}>
                   Brak preview — dodaj własny plik audio
                 </p>
               )}
             </div>
-
-            {/* Change */}
-            <button
-              onClick={() => setSelected(null)}
-              title="Zmień piosenkę"
-              type="button"
-              style={{
-                background: "none", border: "none", cursor: "pointer",
-                color: "rgba(240,160,184,0.3)", padding: "0.4rem",
-                flexShrink: 0, transition: "color 0.2s",
-              }}
-              onMouseEnter={e =>
-                (e.currentTarget as HTMLButtonElement).style.color = "rgba(240,160,184,0.7)"
-              }
-              onMouseLeave={e =>
-                (e.currentTarget as HTMLButtonElement).style.color = "rgba(240,160,184,0.3)"
-              }
+            <button onClick={() => setSelected(null)} title="Zmień piosenkę" type="button"
+              style={{ background: "none", border: "none", cursor: "pointer", color: "rgba(240,160,184,0.3)", padding: "0.4rem", flexShrink: 0, transition: "color 0.2s" }}
+              onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.color = "rgba(240,160,184,0.7)"}
+              onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.color = "rgba(240,160,184,0.3)"}
             >
               <X size={16} />
             </button>
           </motion.div>
         ) : (
-          /* ── Search input + results ── */
           <div>
             <div style={{ display: "flex", gap: "0.65rem", marginBottom: "0.75rem" }}>
               <input
-                type="text"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-                placeholder="Wpisz tytuł lub wykonawcę..."
-                autoComplete="off"
+                type="text" value={query} onChange={e => setQuery(e.target.value)}
+                onKeyDown={e => e.key === "Enter" && handleSearch()}
+                placeholder="Wpisz tytuł lub wykonawcę..." autoComplete="off"
                 style={inputBase}
               />
-              <button
-                onClick={handleSearch}
-                disabled={searching || !query.trim()}
-                type="button"
-                style={{
-                  padding: "0.75rem 1.2rem",
-                  borderRadius: "0.75rem", border: "none",
-                  background: "linear-gradient(135deg, #d4a853, rgba(240,160,184,0.85))",
-                  color: "#100508",
-                  fontFamily: "'DM Sans', sans-serif",
-                  fontSize: "0.85rem", fontWeight: 500,
-                  cursor: searching ? "wait" : "pointer",
-                  display: "flex", alignItems: "center", gap: "0.4rem",
-                  flexShrink: 0,
-                  opacity: searching || !query.trim() ? 0.65 : 1,
-                  transition: "opacity 0.2s",
-                  whiteSpace: "nowrap",
-                }}
+              <button onClick={handleSearch} disabled={searching || !query.trim()} type="button"
+                style={{ padding: "0.75rem 1.2rem", borderRadius: "0.75rem", border: "none", background: "linear-gradient(135deg, #d4a853, rgba(240,160,184,0.85))", color: "#100508", fontFamily: "'DM Sans', sans-serif", fontSize: "0.85rem", fontWeight: 500, cursor: searching ? "wait" : "pointer", display: "flex", alignItems: "center", gap: "0.4rem", flexShrink: 0, opacity: searching || !query.trim() ? 0.65 : 1, transition: "opacity 0.2s", whiteSpace: "nowrap" }}
               >
                 {searching
                   ? <><Loader2 size={14} style={{ animation: "spin 1s linear infinite" }} /> Szukam...</>
@@ -633,97 +365,34 @@ export default function AddSongPage() {
               </button>
             </div>
 
-            {/* Results */}
             <AnimatePresence>
               {results.length > 0 && (
                 <motion.div
-                  initial={{ opacity: 0, y: -6 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -6 }}
+                  initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }}
                   transition={{ duration: 0.25 }}
-                  style={{
-                    background: "rgba(16,5,8,0.95)",
-                    border: "1px solid rgba(240,160,184,0.1)",
-                    borderRadius: "1rem",
-                    overflow: "hidden",
-                    backdropFilter: "blur(20px)",
-                  }}
+                  style={{ background: "rgba(16,5,8,0.95)", border: "1px solid rgba(240,160,184,0.1)", borderRadius: "1rem", overflow: "hidden", backdropFilter: "blur(20px)" }}
                 >
                   {results.map((track, i) => (
-                    <button
-                      key={track.trackId}
-                      onClick={() => selectTrack(track)}
-                      type="button"
-                      style={{
-                        display: "flex", alignItems: "center", gap: "0.85rem",
-                        padding: "0.75rem 1rem", width: "100%",
-                        background: "transparent",
-                        border: "none",
-                        borderBottom: i < results.length - 1
-                          ? "1px solid rgba(240,160,184,0.06)"
-                          : "none",
-                        cursor: "pointer", textAlign: "left",
-                        transition: "background 0.15s",
-                      }}
-                      onMouseEnter={e =>
-                        (e.currentTarget as HTMLButtonElement).style.background =
-                          "rgba(240,160,184,0.05)"
-                      }
-                      onMouseLeave={e =>
-                        (e.currentTarget as HTMLButtonElement).style.background = "transparent"
-                      }
+                    <button key={track.trackId} onClick={() => selectTrack(track)} type="button"
+                      style={{ display: "flex", alignItems: "center", gap: "0.85rem", padding: "0.75rem 1rem", width: "100%", background: "transparent", border: "none", borderBottom: i < results.length - 1 ? "1px solid rgba(240,160,184,0.06)" : "none", cursor: "pointer", textAlign: "left", transition: "background 0.15s" }}
+                      onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.background = "rgba(240,160,184,0.05)"}
+                      onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.background = "transparent"}
                     >
-                      {/* Cover */}
-                      <div style={{
-                        position: "relative", width: "44px", height: "44px",
-                        borderRadius: "0.4rem", overflow: "hidden", flexShrink: 0,
-                        background: "rgba(212,168,83,0.08)",
-                      }}>
+                      <div style={{ position: "relative", width: "44px", height: "44px", borderRadius: "0.4rem", overflow: "hidden", flexShrink: 0, background: "rgba(212,168,83,0.08)" }}>
                         {track.artworkUrl100 && (
-                          <Image
-                            src={track.artworkUrl100}
-                            alt={track.trackName}
-                            fill
-                            className="object-cover"
-                            sizes="44px"
-                            unoptimized
-                          />
+                          <Image src={track.artworkUrl100} alt={track.trackName} fill className="object-cover" sizes="44px" unoptimized />
                         )}
                       </div>
-
-                      {/* Info */}
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <p style={{
-                          fontFamily: "'DM Sans', sans-serif",
-                          fontSize: "0.88rem", color: "#f7cdd8",
-                          overflow: "hidden", textOverflow: "ellipsis",
-                          whiteSpace: "nowrap",
-                        }}>
+                        <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "0.88rem", color: "#f7cdd8", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                           {track.trackName}
                         </p>
-                        <p style={{
-                          fontFamily: "'DM Sans', sans-serif",
-                          fontSize: "0.72rem", color: "rgba(240,160,184,0.4)",
-                          overflow: "hidden", textOverflow: "ellipsis",
-                          whiteSpace: "nowrap",
-                        }}>
-                          {track.artistName}
-                          {track.collectionName ? ` · ${track.collectionName}` : ""}
+                        <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "0.72rem", color: "rgba(240,160,184,0.4)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                          {track.artistName}{track.collectionName ? ` · ${track.collectionName}` : ""}
                         </p>
                       </div>
-
-                      {/* Preview badge */}
                       {track.previewUrl && (
-                        <span style={{
-                          fontFamily: "'DM Sans', sans-serif",
-                          fontSize: "0.62rem",
-                          color: "rgba(100,220,130,0.55)",
-                          background: "rgba(100,220,130,0.07)",
-                          border: "1px solid rgba(100,220,130,0.12)",
-                          borderRadius: "999px",
-                          padding: "2px 7px",
-                          flexShrink: 0,
-                        }}>
+                        <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "0.62rem", color: "rgba(100,220,130,0.55)", background: "rgba(100,220,130,0.07)", border: "1px solid rgba(100,220,130,0.12)", borderRadius: "999px", padding: "2px 7px", flexShrink: 0 }}>
                           ▶ 30s
                         </span>
                       )}
@@ -733,15 +402,8 @@ export default function AddSongPage() {
               )}
             </AnimatePresence>
 
-            {/* No results hint */}
             {!searching && query && results.length === 0 && (
-              <p style={{
-                fontFamily: "'DM Sans', sans-serif",
-                fontSize: "0.78rem",
-                color: "rgba(240,160,184,0.2)",
-                textAlign: "center",
-                padding: "1rem 0",
-              }}>
+              <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "0.78rem", color: "rgba(240,160,184,0.2)", textAlign: "center", padding: "1rem 0" }}>
                 Naciśnij Enter lub kliknij Szukaj
               </p>
             )}
@@ -749,214 +411,81 @@ export default function AddSongPage() {
         )}
       </motion.section>
 
-      {/* ══════════════════════════════════════════════
-          STEP 2 — Memory details
-      ══════════════════════════════════════════════ */}
-      <motion.section
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.55, delay: 0.1 }}
-        style={{ marginBottom: "2rem" }}
-      >
+      {/* ══ STEP 2 — Memory details ══ */}
+      <motion.section initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.55, delay: 0.1 }} style={{ marginBottom: "2rem" }}>
         <SectionLabel number="2" label="Twoje wspomnienie z tą piosenką" />
-
         <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
           <div>
             <FieldLabel>Data wspomnienia</FieldLabel>
-            <input
-              type="text"
-              value={memoryDate}
-              onChange={(e) => setMemoryDate(e.target.value)}
-              placeholder="np. 14 lutego 2024"
-              style={inputBase}
-            />
+            <input type="text" value={memoryDate} onChange={e => setMemoryDate(e.target.value)} placeholder="np. 14 lutego 2024" style={inputBase} />
           </div>
-
           <div>
             <FieldLabel>Krótki opis widoczny na osi czasu</FieldLabel>
-            <input
-              type="text"
-              value={shortDescription}
-              onChange={(e) => setShortDescription(e.target.value)}
-              placeholder="np. Pierwszy wieczór kiedy pomyślałem, że to właśnie Ty..."
-              style={inputBase}
-            />
+            <input type="text" value={shortDescription} onChange={e => setShortDescription(e.target.value)} placeholder="np. Pierwszy wieczór kiedy pomyślałem, że to właśnie Ty..." style={inputBase} />
           </div>
-
           <div>
             <FieldLabel>Twój osobisty list do Izy o tej piosence</FieldLabel>
-            <textarea
-              value={whyOurSong}
-              onChange={(e) => setWhyOurSong(e.target.value)}
-              placeholder={`Napisz dlaczego ta piosenka jest wasza...\n\nCo czułeś kiedy ją usłyszałeś? Jakie wspomnienie budzi? Co chcesz żeby Iza poczuła czytając to?`}
+            <textarea value={whyOurSong} onChange={e => setWhyOurSong(e.target.value)}
+              placeholder={`Napisz dlaczego ta piosenka jest wasza...\n\nCo czułeś kiedy ją usłyszałeś? Jakie wspomnienie budzi?`}
               rows={6}
-              style={{
-                ...inputBase,
-                resize: "vertical",
-                lineHeight: 1.75,
-                minHeight: "130px",
-              }}
+              style={{ ...inputBase, resize: "vertical", lineHeight: 1.75, minHeight: "130px" }}
             />
           </div>
         </div>
       </motion.section>
 
-      {/* ══════════════════════════════════════════════
-          STEP 3 — Lyrics + highlights
-      ══════════════════════════════════════════════ */}
-      <motion.section
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.55, delay: 0.15 }}
-        style={{ marginBottom: "2.5rem" }}
-      >
+      {/* ══ STEP 3 — Lyrics ══ */}
+      <motion.section initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.55, delay: 0.15 }} style={{ marginBottom: "2.5rem" }}>
         <SectionLabel number="3" label="Tekst piosenki z oznaczeniami" />
 
-        <div
-          style={{
-            background: "rgba(212,168,83,0.04)",
-            border: "1px solid rgba(212,168,83,0.1)",
-            borderRadius: "0.75rem",
-            padding: "0.75rem 1rem",
-            marginBottom: "1rem",
-            display: "flex", alignItems: "flex-start", gap: "0.5rem",
-          }}
-        >
+        <div style={{ background: "rgba(212,168,83,0.04)", border: "1px solid rgba(212,168,83,0.1)", borderRadius: "0.75rem", padding: "0.75rem 1rem", marginBottom: "1rem", display: "flex", alignItems: "flex-start", gap: "0.5rem" }}>
           <Star size={12} style={{ color: "#d4a853", marginTop: "1px", flexShrink: 0 }} />
-          <p style={{
-            fontFamily: "'DM Sans', sans-serif",
-            fontSize: "0.75rem",
-            color: "rgba(212,168,83,0.65)",
-            lineHeight: 1.6,
-          }}>
-            Wklej tekst wers po wersie. Ustaw czas w sekundach kiedy ten wers się zaczyna
-            (zsynchronizuje się z odtwarzaczem). Kliknij ⭐ przy wersie aby oznaczyć
-            ważne słowo — Iza zobaczy je złoto podświetlone i po kliknięciu przeczyta
-            Twoją notatę.
+          <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "0.75rem", color: "rgba(212,168,83,0.65)", lineHeight: 1.6 }}>
+            Wklej tekst wers po wersie. Ustaw czas w sekundach kiedy ten wers się zaczyna. Kliknij ⭐ aby oznaczyć ważne słowo — Iza zobaczy Twoją notatkę po kliknięciu.
           </p>
         </div>
 
-        {/* Lines */}
         <div>
           {lyrics.map((line, i) => (
-            <LyricLineEditor
-              key={i}
-              line={line}
-              index={i}
-              onChange={(updated) => updateLine(i, updated)}
+            <LyricLineEditor key={i} line={line} index={i}
+              onChange={updated => updateLine(i, updated)}
               onRemove={() => removeLine(i)}
             />
           ))}
         </div>
 
-        {/* Add line button */}
-        <button
-          onClick={addLyricLine}
-          type="button"
-          style={{
-            marginTop: "0.4rem",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            gap: "0.5rem", width: "100%",
-            background: "transparent",
-            border: "1px dashed rgba(240,160,184,0.13)",
-            borderRadius: "0.75rem",
-            padding: "0.65rem",
-            color: "rgba(240,160,184,0.35)",
-            fontFamily: "'DM Sans', sans-serif",
-            fontSize: "0.8rem",
-            cursor: "pointer",
-            transition: "border-color 0.2s, color 0.2s",
-          }}
-          onMouseEnter={e => {
-            (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(240,160,184,0.3)";
-            (e.currentTarget as HTMLButtonElement).style.color = "rgba(240,160,184,0.65)";
-          }}
-          onMouseLeave={e => {
-            (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(240,160,184,0.13)";
-            (e.currentTarget as HTMLButtonElement).style.color = "rgba(240,160,184,0.35)";
-          }}
+        <button onClick={addLyricLine} type="button"
+          style={{ marginTop: "0.4rem", display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem", width: "100%", background: "transparent", border: "1px dashed rgba(240,160,184,0.13)", borderRadius: "0.75rem", padding: "0.65rem", color: "rgba(240,160,184,0.35)", fontFamily: "'DM Sans', sans-serif", fontSize: "0.8rem", cursor: "pointer", transition: "border-color 0.2s, color 0.2s" }}
+          onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(240,160,184,0.3)"; (e.currentTarget as HTMLButtonElement).style.color = "rgba(240,160,184,0.65)"; }}
+          onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(240,160,184,0.13)"; (e.currentTarget as HTMLButtonElement).style.color = "rgba(240,160,184,0.35)"; }}
         >
           <Plus size={13} /> Dodaj wers
         </button>
 
-        {/* Lyrics count */}
         {lyrics.filter(l => l.text.trim()).length > 0 && (
-          <p style={{
-            fontFamily: "'DM Sans', sans-serif",
-            fontSize: "0.68rem",
-            color: "rgba(240,160,184,0.2)",
-            textAlign: "right",
-            marginTop: "0.5rem",
-          }}>
-            {lyrics.filter(l => l.text.trim()).length} wersów ·{" "}
-            {lyrics.reduce((acc, l) => acc + (l.highlighted?.length ?? 0), 0)} oznaczeń
+          <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "0.68rem", color: "rgba(240,160,184,0.2)", textAlign: "right", marginTop: "0.5rem" }}>
+            {lyrics.filter(l => l.text.trim()).length} wersów · {lyrics.reduce((acc, l) => acc + (l.highlighted?.length ?? 0), 0)} oznaczeń
           </p>
         )}
       </motion.section>
 
-      {/* ══════════════════════════════════════════════
-          SAVE BUTTONS
-      ══════════════════════════════════════════════ */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.2 }}
-        style={{
-          display: "flex",
-          justifyContent: "flex-end",
-          gap: "0.75rem",
-          paddingTop: "1rem",
-          borderTop: "1px solid rgba(240,160,184,0.06)",
-        }}
+      {/* ══ SAVE ══ */}
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }}
+        style={{ display: "flex", justifyContent: "flex-end", gap: "0.75rem", paddingTop: "1rem", borderTop: "1px solid rgba(240,160,184,0.06)" }}
       >
         <Link href="/admin/dashboard" style={{ textDecoration: "none" }}>
-          <button
-            type="button"
-            style={{
-              padding: "0.85rem 1.5rem",
-              borderRadius: "0.75rem",
-              border: "1px solid rgba(240,160,184,0.1)",
-              background: "transparent",
-              color: "rgba(240,160,184,0.45)",
-              fontFamily: "'DM Sans', sans-serif",
-              fontSize: "0.85rem",
-              cursor: "pointer",
-              transition: "border-color 0.2s, color 0.2s",
-            }}
-          >
+          <button type="button" style={{ padding: "0.85rem 1.5rem", borderRadius: "0.75rem", border: "1px solid rgba(240,160,184,0.1)", background: "transparent", color: "rgba(240,160,184,0.45)", fontFamily: "'DM Sans', sans-serif", fontSize: "0.85rem", cursor: "pointer", transition: "border-color 0.2s, color 0.2s" }}>
             Anuluj
           </button>
         </Link>
 
-        <motion.button
-          whileTap={{ scale: 0.97 }}
-          onClick={handleSave}
-          disabled={saving}
-          type="button"
-          style={{
-            padding: "0.85rem 2rem",
-            borderRadius: "0.75rem", border: "none",
-            background: "linear-gradient(135deg, #d4a853 0%, rgba(240,160,184,0.85) 100%)",
-            color: "#100508",
-            fontFamily: "'DM Sans', sans-serif",
-            fontSize: "0.9rem", fontWeight: 500,
-            cursor: saving ? "wait" : "pointer",
-            display: "flex", alignItems: "center", gap: "0.5rem",
-            boxShadow: "0 4px 20px rgba(212,168,83,0.25)",
-            opacity: saving ? 0.7 : 1,
-            transition: "opacity 0.2s, box-shadow 0.2s",
-          }}
-          onMouseEnter={e =>
-            (e.currentTarget as HTMLButtonElement).style.boxShadow =
-              "0 6px 28px rgba(212,168,83,0.4)"
-          }
-          onMouseLeave={e =>
-            (e.currentTarget as HTMLButtonElement).style.boxShadow =
-              "0 4px 20px rgba(212,168,83,0.25)"
-          }
+        <motion.button whileTap={{ scale: 0.97 }} onClick={handleSave} disabled={saving} type="button"
+          style={{ padding: "0.85rem 2rem", borderRadius: "0.75rem", border: "none", background: "linear-gradient(135deg, #d4a853 0%, rgba(240,160,184,0.85) 100%)", color: "#100508", fontFamily: "'DM Sans', sans-serif", fontSize: "0.9rem", fontWeight: 500, cursor: saving ? "wait" : "pointer", display: "flex", alignItems: "center", gap: "0.5rem", boxShadow: "0 4px 20px rgba(212,168,83,0.25)", opacity: saving ? 0.7 : 1, transition: "opacity 0.2s, box-shadow 0.2s" }}
+          onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.boxShadow = "0 6px 28px rgba(212,168,83,0.4)"}
+          onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.boxShadow = "0 4px 20px rgba(212,168,83,0.25)"}
         >
           {saving
-            ? <><Loader2 size={14} style={{ animation: "spin 1s linear infinite" }} /> Zapisuję...</>
+            ? <><Loader2 size={14} style={{ animation: "spin 1s linear infinite" }} /> Zapisuję do Supabase...</>
             : <>♥ Dodaj do historii Izy</>
           }
         </motion.button>
@@ -973,32 +502,12 @@ export default function AddSongPage() {
   );
 }
 
-/* ─────────────────────────────────────────────────────
-   STYLE TOKENS
-───────────────────────────────────────────────────── */
+/* ── Style tokens ── */
 const inputBase: React.CSSProperties = {
-  width: "100%",
-  padding: "0.8rem 1rem",
-  borderRadius: "0.75rem",
-  border: "1px solid rgba(240,160,184,0.11)",
-  background: "rgba(16,5,8,0.7)",
-  color: "#f7cdd8",
-  fontFamily: "'DM Sans', sans-serif",
-  fontSize: "0.9rem",
-  outline: "none",
-  transition: "border-color 0.2s",
+  width: "100%", padding: "0.8rem 1rem", borderRadius: "0.75rem",
+  border: "1px solid rgba(240,160,184,0.11)", background: "rgba(16,5,8,0.7)",
+  color: "#f7cdd8", fontFamily: "'DM Sans', sans-serif", fontSize: "0.9rem",
+  outline: "none", transition: "border-color 0.2s",
 };
-
-const inputSm: React.CSSProperties = {
-  ...inputBase,
-  padding: "0.42rem 0.6rem",
-  fontSize: "0.8rem",
-  borderRadius: "0.5rem",
-};
-
-const inputXs: React.CSSProperties = {
-  ...inputBase,
-  padding: "0.32rem 0.5rem",
-  fontSize: "0.75rem",
-  borderRadius: "0.45rem",
-};
+const inputSm: React.CSSProperties = { ...inputBase, padding: "0.42rem 0.6rem", fontSize: "0.8rem", borderRadius: "0.5rem" };
+const inputXs: React.CSSProperties = { ...inputBase, padding: "0.32rem 0.5rem", fontSize: "0.75rem", borderRadius: "0.45rem" };

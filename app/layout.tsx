@@ -5,7 +5,7 @@ import HeartParticles from "@/components/HeartParticles";
 import GeoBackground from "@/components/GeoBackground";
 import AmbientPlayer from "@/components/AmbientPlayer";
 import NightModeProvider from "@/components/NightModeProvider";
-import { StoreHydration } from "@/components/StoreHydration";
+import StoreHydration from "@/components/StoreHydration";
 
 export const metadata: Metadata = {
   title: "Nasza Historia ♥ Iza",

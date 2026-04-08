@@ -1,25 +1,15 @@
-"use client";
+// hooks/useHydration.ts
+// Poprzednio czekał na hydratację Zustand localStorage.
+// Teraz dane są w Supabase (SSR) — zawsze "hydrated" po stronie klienta.
 
-import { useEffect, useState } from "react";
-import { useSongStore } from "./store";
+import { useState, useEffect } from "react";
 
-/**
- * Ręcznie uruchamia hydratację Zustand ze strony klienta.
- * Zwraca `true` gdy store jest gotowy.
- */
 export function useHydration(): boolean {
   const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
-    // Ręczna hydratacja — czyta dane z localStorage po stronie klienta
-    const unsub = useSongStore.persist.onFinishHydration(() => {
-      setHydrated(true);
-    });
-
-    // Uruchom hydratację
-    useSongStore.persist.rehydrate();
-
-    return () => unsub();
+    // Po zamontowaniu komponentu jesteśmy już po stronie klienta
+    setHydrated(true);
   }, []);
 
   return hydrated;

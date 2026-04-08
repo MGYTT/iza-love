@@ -1,16 +1,7 @@
-"use client";
+// components/StoreHydration.tsx
+// Zustand został zastąpiony Supabase — ten komponent nie jest już potrzebny
+// ale zostaje jako pusty wrapper żeby nie psuć istniejących importów
 
-import { useEffect } from "react";
-import { useSongStore } from "@/lib/store";
-
-/**
- * Umieść ten komponent w app/layout.tsx — uruchamia hydratację
- * Zustand raz po załadowaniu strony po stronie klienta.
- */
-export function StoreHydration() {
-  useEffect(() => {
-    useSongStore.persist.rehydrate();
-  }, []);
-
+export default function StoreHydration() {
   return null;
 }
