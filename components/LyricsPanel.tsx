@@ -67,6 +67,195 @@ function FloatingHeart({ color }: { color: string }) {
 /* ─────────────────────────────────────────────────────
    HIGHLIGHTED WORD — tooltip z animacją
 ───────────────────────────────────────────────────── */
+/* ─────────────────────────────────────────────────────
+   MODAL — centrum ekranu zamiast tooltip
+───────────────────────────────────────────────────── */
+function NoteModal({
+  hl,
+  word,
+  onClose,
+}: {
+  hl: HighlightedWord;
+  word: string;
+  onClose: () => void;
+}) {
+  const c = COLORS[hl.color] ?? COLORS.gold;
+
+  // Zamknij na Escape
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [onClose]);
+
+  return (
+    <AnimatePresence>
+      {/* Backdrop */}
+      <motion.div
+        key="backdrop"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.22 }}
+        onClick={onClose}
+        style={{
+          position: "fixed",
+          inset: 0,
+          zIndex: 90,
+          background: "rgba(8,2,5,0.75)",
+          backdropFilter: "blur(6px)",
+          WebkitBackdropFilter: "blur(6px)",
+          cursor: "pointer",
+        }}
+      />
+
+      {/* Modal */}
+      <motion.div
+        key="modal"
+        initial={{ opacity: 0, scale: 0.88, y: 24 }}
+        animate={{ opacity: 1, scale: 1,    y: 0  }}
+        exit={{    opacity: 0, scale: 0.88, y: 24 }}
+        transition={{ duration: 0.32, ease: [0.16, 1, 0.3, 1] }}
+        style={{
+          position: "fixed",
+          top: "50%",
+          left: "50%",
+          transform: "translate(-50%, -50%)",
+          zIndex: 91,
+          width: "min(420px, calc(100vw - 2.5rem))",
+          background: "rgba(14,4,9,0.98)",
+          backdropFilter: "blur(32px)",
+          WebkitBackdropFilter: "blur(32px)",
+          border: `1px solid ${c.border}40`,
+          borderRadius: "1.4rem",
+          padding: "2rem 2rem 1.75rem",
+          boxShadow: `0 32px 80px rgba(0,0,0,0.8), 0 0 60px ${c.glow}25`,
+          pointerEvents: "auto",
+        }}
+      >
+        {/* Blask w tle */}
+        <div style={{
+          position: "absolute",
+          top: "-40px", left: "50%",
+          transform: "translateX(-50%)",
+          width: "200px", height: "120px",
+          background: `radial-gradient(ellipse, ${c.glow}20, transparent 70%)`,
+          pointerEvents: "none",
+          borderRadius: "50%",
+        }} />
+
+        {/* Zamknij */}
+        <button
+          onClick={onClose}
+          aria-label="Zamknij"
+          style={{
+            position: "absolute",
+            top: "0.9rem", right: "0.9rem",
+            background: "rgba(240,160,184,0.06)",
+            border: "1px solid rgba(240,160,184,0.1)",
+            borderRadius: "50%",
+            width: "28px", height: "28px",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            cursor: "pointer",
+            color: "rgba(240,160,184,0.4)",
+            fontSize: "0.9rem",
+            transition: "all 0.2s",
+          }}
+          onMouseEnter={e => {
+            (e.currentTarget as HTMLButtonElement).style.background = "rgba(240,160,184,0.12)";
+            (e.currentTarget as HTMLButtonElement).style.color = "rgba(240,160,184,0.8)";
+          }}
+          onMouseLeave={e => {
+            (e.currentTarget as HTMLButtonElement).style.background = "rgba(240,160,184,0.06)";
+            (e.currentTarget as HTMLButtonElement).style.color = "rgba(240,160,184,0.4)";
+          }}
+        >
+          ×
+        </button>
+
+        {/* Label */}
+        <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "1rem" }}>
+          <Sparkles size={12} style={{ color: c.text, flexShrink: 0 }} />
+          <span style={{
+            fontFamily: "'DM Sans', sans-serif",
+            fontSize: "0.63rem",
+            letterSpacing: "0.14em",
+            textTransform: "uppercase",
+            color: `${c.text}90`,
+          }}>
+            Osobista notatka
+          </span>
+        </div>
+
+        {/* Słowo */}
+        <div style={{
+          display: "inline-block",
+          background: c.bg,
+          border: `1px solid ${c.border}50`,
+          borderRadius: "0.5rem",
+          padding: "0.25rem 0.75rem",
+          marginBottom: "1.1rem",
+        }}>
+          <span style={{
+            fontFamily: "'Cormorant Garamond', serif",
+            fontSize: "1.1rem",
+            fontWeight: 600,
+            color: c.text,
+            textShadow: `0 0 18px ${c.glow}`,
+            fontStyle: "italic",
+          }}>
+            „{word}"
+          </span>
+        </div>
+
+        {/* Kreska */}
+        <div style={{
+          height: "1px",
+          background: `linear-gradient(to right, transparent, ${c.border}40, transparent)`,
+          marginBottom: "1.1rem",
+        }} />
+
+        {/* Treść notatki */}
+        <p style={{
+          fontFamily: "'Cormorant Garamond', serif",
+          fontSize: "1.18rem",
+          fontStyle: "italic",
+          fontWeight: 300,
+          color: "#f7cdd8",
+          lineHeight: 1.7,
+          margin: 0,
+        }}>
+          &ldquo;{hl.note}&rdquo;
+        </p>
+
+        {/* Podpis */}
+        <div style={{
+          marginTop: "1.25rem",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "flex-end",
+          gap: "5px",
+        }}>
+          <Heart size={10} style={{ color: `${c.text}60` }} />
+          <span style={{
+            fontFamily: "'Cormorant Garamond', serif",
+            fontSize: "0.8rem",
+            fontStyle: "italic",
+            color: `${c.text}50`,
+          }}>
+            od Ciebie
+          </span>
+        </div>
+      </motion.div>
+    </AnimatePresence>
+  );
+}
+
+/* ─────────────────────────────────────────────────────
+   HIGHLIGHTED WORD CHIP — otwiera modal zamiast tooltip
+───────────────────────────────────────────────────── */
 function HighlightedWordChip({
   word,
   hl,
@@ -94,10 +283,11 @@ function HighlightedWordChip({
         {hearts.map(id => <FloatingHeart key={id} color={c.text} />)}
       </AnimatePresence>
 
+      {/* Podświetlone słowo */}
       <button
         onClick={handleClick}
         aria-expanded={open}
-        aria-label={`Notatka: ${hl.note}`}
+        aria-label={`Notatka do słowa: ${word}`}
         style={{
           background: open ? c.bg : "transparent",
           color: c.text,
@@ -114,7 +304,6 @@ function HighlightedWordChip({
           borderRadius: "2px",
           transition: "all 0.2s ease",
           display: "inline",
-          position: "relative",
         }}
         onMouseEnter={e => {
           const b = e.currentTarget as HTMLButtonElement;
@@ -130,85 +319,14 @@ function HighlightedWordChip({
         {word}
       </button>
 
-      <AnimatePresence>
-        {open && (
-          <>
-            {/* Backdrop tap-to-close */}
-            <span
-              style={{ position: "fixed", inset: 0, zIndex: 55 }}
-              onClick={() => setOpen(false)}
-            />
-            <motion.div
-              role="tooltip"
-              initial={{ opacity: 0, y: 10, scale: 0.92 }}
-              animate={{ opacity: 1, y: 0,  scale: 1    }}
-              exit={{    opacity: 0, y: 10, scale: 0.92 }}
-              transition={{ duration: 0.24, ease: [0.16, 1, 0.3, 1] }}
-              style={{
-                position: "absolute",
-                bottom: "calc(100% + 12px)",
-                left: "50%",
-                transform: "translateX(-50%)",
-                zIndex: 60,
-                width: "230px",
-                background: "rgba(18,6,11,0.98)",
-                backdropFilter: "blur(24px)",
-                WebkitBackdropFilter: "blur(24px)",
-                border: `1px solid ${c.border}35`,
-                borderRadius: "1rem",
-                padding: "0.9rem 1.05rem 1rem",
-                boxShadow: `0 16px 48px rgba(0,0,0,0.7), 0 0 32px ${c.glow}30`,
-                pointerEvents: "none",
-              }}
-            >
-              {/* Arrow */}
-              <div style={{
-                position: "absolute",
-                bottom: "-5px", left: "50%",
-                transform: "translateX(-50%) rotate(45deg)",
-                width: "9px", height: "9px",
-                background: "rgba(18,6,11,0.98)",
-                borderRight: `1px solid ${c.border}35`,
-                borderBottom: `1px solid ${c.border}35`,
-              }} />
-
-              {/* Header */}
-              <div style={{ display: "flex", alignItems: "center", gap: "5px", marginBottom: "0.45rem" }}>
-                <Sparkles size={10} style={{ color: c.text, flexShrink: 0 }} />
-                <span style={{
-                  fontFamily: "'DM Sans', sans-serif",
-                  fontSize: "0.61rem",
-                  letterSpacing: "0.13em",
-                  textTransform: "uppercase",
-                  color: `${c.text}95`,
-                }}>
-                  Osobista notatka
-                </span>
-              </div>
-
-              {/* Note text */}
-              <p style={{
-                fontFamily: "'Cormorant Garamond', serif",
-                fontSize: "1rem",
-                fontStyle: "italic",
-                fontWeight: 300,
-                color: "#f7cdd8",
-                lineHeight: 1.6,
-                margin: 0,
-              }}>
-                &ldquo;{hl.note}&rdquo;
-              </p>
-
-              {/* Color accent line na dole */}
-              <div style={{
-                marginTop: "0.65rem",
-                height: "1px",
-                background: `linear-gradient(to right, ${c.border}60, transparent)`,
-              }} />
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
+      {/* Modal — renderowany przez portal do body */}
+      {open && (
+        <NoteModal
+          hl={hl}
+          word={word}
+          onClose={() => setOpen(false)}
+        />
+      )}
     </span>
   );
 }
