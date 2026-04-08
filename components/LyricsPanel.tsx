@@ -41,7 +41,7 @@ function formatTime(s: number): string {
 
 function pluralNote(n: number): string {
   if (n === 1) return "notatka";
-  if (n < 5)  return "notatki";
+  if (n < 5)   return "notatki";
   return "notatek";
 }
 
@@ -72,7 +72,7 @@ function FloatingHeart({ color }: { color: string }) {
 }
 
 /* ─────────────────────────────────────────────────────
-   NOTE MODAL — centrum ekranu
+   NOTE MODAL
 ───────────────────────────────────────────────────── */
 function NoteModal({
   hl,
@@ -93,7 +93,6 @@ function NoteModal({
     return () => window.removeEventListener("keydown", handler);
   }, [onClose]);
 
-  // Prevent body scroll when modal is open
   useEffect(() => {
     document.body.style.overflow = "hidden";
     return () => { document.body.style.overflow = ""; };
@@ -128,6 +127,7 @@ function NoteModal({
         animate={{ opacity: 1, scale: 1,    y: 0  }}
         exit={{    opacity: 0, scale: 0.86, y: 28 }}
         transition={{ duration: 0.34, ease: [0.16, 1, 0.3, 1] }}
+        onClick={(e) => e.stopPropagation()}
         style={{
           position: "fixed",
           top: "50%",
@@ -147,9 +147,8 @@ function NoteModal({
             0 0 80px ${c.glow}20
           `,
         }}
-        onClick={e => e.stopPropagation()}
       >
-        {/* Ambient glow blob */}
+        {/* Ambient glow */}
         <div style={{
           position: "absolute",
           top: "-60px", left: "50%",
@@ -161,7 +160,7 @@ function NoteModal({
           zIndex: 0,
         }} />
 
-        {/* Close button */}
+        {/* Close */}
         <button
           onClick={onClose}
           aria-label="Zamknij"
@@ -177,7 +176,6 @@ function NoteModal({
             color: "rgba(240,160,184,0.38)",
             transition: "all 0.2s",
             zIndex: 2,
-            flexShrink: 0,
           }}
           onMouseEnter={e => {
             const b = e.currentTarget as HTMLButtonElement;
@@ -195,13 +193,11 @@ function NoteModal({
           <X size={13} />
         </button>
 
-        {/* Content wrapper */}
+        {/* Content */}
         <div style={{ position: "relative", zIndex: 1 }}>
-          {/* Label row */}
-          <div style={{
-            display: "flex", alignItems: "center", gap: "6px",
-            marginBottom: "1.1rem",
-          }}>
+
+          {/* Label */}
+          <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "1.1rem" }}>
             <Sparkles size={11} style={{ color: c.text, flexShrink: 0 }} />
             <span style={{
               fontFamily: "'DM Sans', sans-serif",
@@ -214,7 +210,7 @@ function NoteModal({
             </span>
           </div>
 
-          {/* Highlighted word chip */}
+          {/* Word chip — bez polskich cudzysłowów w JSX */}
           <div style={{
             display: "inline-flex",
             alignItems: "center",
@@ -232,7 +228,7 @@ function NoteModal({
               color: c.text,
               textShadow: `0 0 20px ${c.glow}`,
             }}>
-              „{word}"
+              &bdquo;{word}&rdquo;
             </span>
           </div>
 
@@ -256,11 +252,11 @@ function NoteModal({
             &ldquo;{hl.note}&rdquo;
           </p>
 
-          {/* Footer signature */}
+          {/* Footer */}
           <div style={{
             marginTop: "1.4rem",
             paddingTop: "1rem",
-            borderTop: `1px solid rgba(240,160,184,0.06)`,
+            borderTop: "1px solid rgba(240,160,184,0.06)",
             display: "flex",
             alignItems: "center",
             justifyContent: "flex-end",
@@ -468,7 +464,7 @@ export default function LyricsPanel({ lyrics, currentTime, onSeek }: Props) {
     (acc, l) => acc + (l.highlighted?.length ?? 0), 0
   );
 
-  /* Spring progress bar */
+  /* Spring progress */
   const rawProgress = lyrics.length > 0 && activeIndex >= 0
     ? (activeIndex + 1) / lyrics.length
     : 0;
@@ -479,7 +475,7 @@ export default function LyricsPanel({ lyrics, currentTime, onSeek }: Props) {
     motionProgress.set(rawProgress);
   }, [rawProgress, motionProgress]);
 
-  /* Auto-scroll aktywnego wersu */
+  /* Auto-scroll */
   useEffect(() => {
     if (!activeRef.current || !containerRef.current) return;
     const container = containerRef.current;
@@ -507,7 +503,11 @@ export default function LyricsPanel({ lyrics, currentTime, onSeek }: Props) {
             animate={activeIndex >= 0
               ? { scale: [1, 1.22, 1], opacity: [0.7, 1, 0.7] }
               : { scale: 1, opacity: 0.5 }}
-            transition={{ repeat: activeIndex >= 0 ? Infinity : 0, duration: 2, ease: "easeInOut" }}
+            transition={{
+              repeat: activeIndex >= 0 ? Infinity : 0,
+              duration: 2,
+              ease: "easeInOut",
+            }}
           >
             <Music2 size={13} style={{ color: "rgba(212,168,83,0.8)" }} />
           </motion.div>
@@ -556,7 +556,11 @@ export default function LyricsPanel({ lyrics, currentTime, onSeek }: Props) {
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            style={{ overflow: "hidden", flexShrink: 0, borderBottom: "1px solid rgba(240,160,184,0.05)" }}
+            style={{
+              overflow: "hidden",
+              flexShrink: 0,
+              borderBottom: "1px solid rgba(240,160,184,0.05)",
+            }}
           >
             <div style={{
               display: "flex", alignItems: "center", gap: "6px",
@@ -638,7 +642,6 @@ export default function LyricsPanel({ lyrics, currentTime, onSeek }: Props) {
                   <LyricLineText line={line} />
                 </span>
 
-                {/* Timestamp — Framer hover */}
                 <motion.span
                   aria-hidden
                   initial={{ opacity: 0 }}
