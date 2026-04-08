@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback } from "react";
 import { motion, AnimatePresence, useMotionValue, useSpring } from "framer-motion";
-import { Music2, Sparkles, Heart } from "lucide-react";
+import { Music2, Sparkles, Heart, X } from "lucide-react";
 import type { LyricLine, HighlightedWord } from "@/lib/types";
 
 /* ─────────────────────────────────────────────────────
@@ -39,15 +39,21 @@ function formatTime(s: number): string {
   return `${m}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
 }
 
+function pluralNote(n: number): string {
+  if (n === 1) return "notatka";
+  if (n < 5)  return "notatki";
+  return "notatek";
+}
+
 /* ─────────────────────────────────────────────────────
-   FLOATING HEART — mini particle on note open
+   FLOATING HEART
 ───────────────────────────────────────────────────── */
 function FloatingHeart({ color }: { color: string }) {
   return (
     <motion.div
       initial={{ opacity: 1, y: 0, x: 0, scale: 0.6 }}
-      animate={{ opacity: 0, y: -28, x: (Math.random() - 0.5) * 20, scale: 1.1 }}
-      transition={{ duration: 0.9, ease: "easeOut" }}
+      animate={{ opacity: 0, y: -30, x: (Math.random() - 0.5) * 22, scale: 1.2 }}
+      transition={{ duration: 0.95, ease: "easeOut" }}
       style={{
         position: "absolute",
         top: "-4px",
@@ -57,6 +63,7 @@ function FloatingHeart({ color }: { color: string }) {
         zIndex: 70,
         color,
         fontSize: "10px",
+        userSelect: "none",
       }}
     >
       ♥
@@ -65,10 +72,7 @@ function FloatingHeart({ color }: { color: string }) {
 }
 
 /* ─────────────────────────────────────────────────────
-   HIGHLIGHTED WORD — tooltip z animacją
-───────────────────────────────────────────────────── */
-/* ─────────────────────────────────────────────────────
-   MODAL — centrum ekranu zamiast tooltip
+   NOTE MODAL — centrum ekranu
 ───────────────────────────────────────────────────── */
 function NoteModal({
   hl,
@@ -81,7 +85,6 @@ function NoteModal({
 }) {
   const c = COLORS[hl.color] ?? COLORS.gold;
 
-  // Zamknij na Escape
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
@@ -90,200 +93,224 @@ function NoteModal({
     return () => window.removeEventListener("keydown", handler);
   }, [onClose]);
 
+  // Prevent body scroll when modal is open
+  useEffect(() => {
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = ""; };
+  }, []);
+
   return (
-    <AnimatePresence>
+    <>
       {/* Backdrop */}
       <motion.div
-        key="backdrop"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        transition={{ duration: 0.22 }}
+        transition={{ duration: 0.24 }}
         onClick={onClose}
         style={{
           position: "fixed",
           inset: 0,
           zIndex: 90,
-          background: "rgba(8,2,5,0.75)",
-          backdropFilter: "blur(6px)",
-          WebkitBackdropFilter: "blur(6px)",
+          background: "rgba(6,1,4,0.82)",
+          backdropFilter: "blur(8px)",
+          WebkitBackdropFilter: "blur(8px)",
           cursor: "pointer",
         }}
       />
 
       {/* Modal */}
       <motion.div
-        key="modal"
-        initial={{ opacity: 0, scale: 0.88, y: 24 }}
+        role="dialog"
+        aria-modal="true"
+        aria-label={`Notatka do słowa: ${word}`}
+        initial={{ opacity: 0, scale: 0.86, y: 28 }}
         animate={{ opacity: 1, scale: 1,    y: 0  }}
-        exit={{    opacity: 0, scale: 0.88, y: 24 }}
-        transition={{ duration: 0.32, ease: [0.16, 1, 0.3, 1] }}
+        exit={{    opacity: 0, scale: 0.86, y: 28 }}
+        transition={{ duration: 0.34, ease: [0.16, 1, 0.3, 1] }}
         style={{
           position: "fixed",
           top: "50%",
           left: "50%",
           transform: "translate(-50%, -50%)",
           zIndex: 91,
-          width: "min(420px, calc(100vw - 2.5rem))",
-          background: "rgba(14,4,9,0.98)",
-          backdropFilter: "blur(32px)",
-          WebkitBackdropFilter: "blur(32px)",
-          border: `1px solid ${c.border}40`,
-          borderRadius: "1.4rem",
-          padding: "2rem 2rem 1.75rem",
-          boxShadow: `0 32px 80px rgba(0,0,0,0.8), 0 0 60px ${c.glow}25`,
-          pointerEvents: "auto",
+          width: "min(440px, calc(100vw - 2.5rem))",
+          background: "rgba(12,3,8,0.99)",
+          backdropFilter: "blur(36px)",
+          WebkitBackdropFilter: "blur(36px)",
+          border: `1px solid ${c.border}38`,
+          borderRadius: "1.5rem",
+          padding: "2rem 2rem 1.8rem",
+          boxShadow: `
+            0 32px 80px rgba(0,0,0,0.85),
+            0 0 0 1px rgba(255,255,255,0.03),
+            0 0 80px ${c.glow}20
+          `,
         }}
+        onClick={e => e.stopPropagation()}
       >
-        {/* Blask w tle */}
+        {/* Ambient glow blob */}
         <div style={{
           position: "absolute",
-          top: "-40px", left: "50%",
+          top: "-60px", left: "50%",
           transform: "translateX(-50%)",
-          width: "200px", height: "120px",
-          background: `radial-gradient(ellipse, ${c.glow}20, transparent 70%)`,
+          width: "240px", height: "140px",
+          background: `radial-gradient(ellipse, ${c.glow}18, transparent 70%)`,
           pointerEvents: "none",
           borderRadius: "50%",
+          zIndex: 0,
         }} />
 
-        {/* Zamknij */}
+        {/* Close button */}
         <button
           onClick={onClose}
           aria-label="Zamknij"
           style={{
             position: "absolute",
-            top: "0.9rem", right: "0.9rem",
+            top: "1rem", right: "1rem",
             background: "rgba(240,160,184,0.06)",
             border: "1px solid rgba(240,160,184,0.1)",
             borderRadius: "50%",
-            width: "28px", height: "28px",
+            width: "30px", height: "30px",
             display: "flex", alignItems: "center", justifyContent: "center",
             cursor: "pointer",
-            color: "rgba(240,160,184,0.4)",
-            fontSize: "0.9rem",
+            color: "rgba(240,160,184,0.38)",
             transition: "all 0.2s",
+            zIndex: 2,
+            flexShrink: 0,
           }}
           onMouseEnter={e => {
-            (e.currentTarget as HTMLButtonElement).style.background = "rgba(240,160,184,0.12)";
-            (e.currentTarget as HTMLButtonElement).style.color = "rgba(240,160,184,0.8)";
+            const b = e.currentTarget as HTMLButtonElement;
+            b.style.background = "rgba(240,160,184,0.13)";
+            b.style.color = "rgba(240,160,184,0.85)";
+            b.style.borderColor = "rgba(240,160,184,0.25)";
           }}
           onMouseLeave={e => {
-            (e.currentTarget as HTMLButtonElement).style.background = "rgba(240,160,184,0.06)";
-            (e.currentTarget as HTMLButtonElement).style.color = "rgba(240,160,184,0.4)";
+            const b = e.currentTarget as HTMLButtonElement;
+            b.style.background = "rgba(240,160,184,0.06)";
+            b.style.color = "rgba(240,160,184,0.38)";
+            b.style.borderColor = "rgba(240,160,184,0.1)";
           }}
         >
-          ×
+          <X size={13} />
         </button>
 
-        {/* Label */}
-        <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "1rem" }}>
-          <Sparkles size={12} style={{ color: c.text, flexShrink: 0 }} />
-          <span style={{
-            fontFamily: "'DM Sans', sans-serif",
-            fontSize: "0.63rem",
-            letterSpacing: "0.14em",
-            textTransform: "uppercase",
-            color: `${c.text}90`,
+        {/* Content wrapper */}
+        <div style={{ position: "relative", zIndex: 1 }}>
+          {/* Label row */}
+          <div style={{
+            display: "flex", alignItems: "center", gap: "6px",
+            marginBottom: "1.1rem",
           }}>
-            Osobista notatka
-          </span>
-        </div>
+            <Sparkles size={11} style={{ color: c.text, flexShrink: 0 }} />
+            <span style={{
+              fontFamily: "'DM Sans', sans-serif",
+              fontSize: "0.62rem",
+              letterSpacing: "0.15em",
+              textTransform: "uppercase",
+              color: `${c.text}88`,
+            }}>
+              Osobista notatka
+            </span>
+          </div>
 
-        {/* Słowo */}
-        <div style={{
-          display: "inline-block",
-          background: c.bg,
-          border: `1px solid ${c.border}50`,
-          borderRadius: "0.5rem",
-          padding: "0.25rem 0.75rem",
-          marginBottom: "1.1rem",
-        }}>
-          <span style={{
+          {/* Highlighted word chip */}
+          <div style={{
+            display: "inline-flex",
+            alignItems: "center",
+            background: c.bg,
+            border: `1px solid ${c.border}45`,
+            borderRadius: "0.6rem",
+            padding: "0.3rem 0.85rem",
+            marginBottom: "1.2rem",
+          }}>
+            <span style={{
+              fontFamily: "'Cormorant Garamond', serif",
+              fontSize: "1.15rem",
+              fontWeight: 600,
+              fontStyle: "italic",
+              color: c.text,
+              textShadow: `0 0 20px ${c.glow}`,
+            }}>
+              „{word}"
+            </span>
+          </div>
+
+          {/* Divider */}
+          <div style={{
+            height: "1px",
+            background: `linear-gradient(to right, transparent, ${c.border}35, transparent)`,
+            marginBottom: "1.2rem",
+          }} />
+
+          {/* Note text */}
+          <p style={{
             fontFamily: "'Cormorant Garamond', serif",
-            fontSize: "1.1rem",
-            fontWeight: 600,
-            color: c.text,
-            textShadow: `0 0 18px ${c.glow}`,
+            fontSize: "1.22rem",
             fontStyle: "italic",
+            fontWeight: 300,
+            color: "#f7cdd8",
+            lineHeight: 1.72,
+            margin: 0,
           }}>
-            „{word}"
-          </span>
-        </div>
+            &ldquo;{hl.note}&rdquo;
+          </p>
 
-        {/* Kreska */}
-        <div style={{
-          height: "1px",
-          background: `linear-gradient(to right, transparent, ${c.border}40, transparent)`,
-          marginBottom: "1.1rem",
-        }} />
-
-        {/* Treść notatki */}
-        <p style={{
-          fontFamily: "'Cormorant Garamond', serif",
-          fontSize: "1.18rem",
-          fontStyle: "italic",
-          fontWeight: 300,
-          color: "#f7cdd8",
-          lineHeight: 1.7,
-          margin: 0,
-        }}>
-          &ldquo;{hl.note}&rdquo;
-        </p>
-
-        {/* Podpis */}
-        <div style={{
-          marginTop: "1.25rem",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "flex-end",
-          gap: "5px",
-        }}>
-          <Heart size={10} style={{ color: `${c.text}60` }} />
-          <span style={{
-            fontFamily: "'Cormorant Garamond', serif",
-            fontSize: "0.8rem",
-            fontStyle: "italic",
-            color: `${c.text}50`,
+          {/* Footer signature */}
+          <div style={{
+            marginTop: "1.4rem",
+            paddingTop: "1rem",
+            borderTop: `1px solid rgba(240,160,184,0.06)`,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "flex-end",
+            gap: "5px",
           }}>
-            od Ciebie
-          </span>
+            <motion.div
+              animate={{ scale: [1, 1.3, 1] }}
+              transition={{ repeat: Infinity, duration: 1.8, ease: "easeInOut" }}
+            >
+              <Heart size={10} fill={`${c.text}50`} style={{ color: `${c.text}50` }} />
+            </motion.div>
+            <span style={{
+              fontFamily: "'Cormorant Garamond', serif",
+              fontSize: "0.82rem",
+              fontStyle: "italic",
+              color: `${c.text}45`,
+            }}>
+              od Ciebie, dla Izy
+            </span>
+          </div>
         </div>
       </motion.div>
-    </AnimatePresence>
+    </>
   );
 }
 
 /* ─────────────────────────────────────────────────────
-   HIGHLIGHTED WORD CHIP — otwiera modal zamiast tooltip
+   HIGHLIGHTED WORD CHIP
 ───────────────────────────────────────────────────── */
-function HighlightedWordChip({
-  word,
-  hl,
-}: {
-  word: string;
-  hl: HighlightedWord;
-}) {
-  const [open, setOpen] = useState(false);
+function HighlightedWordChip({ word, hl }: { word: string; hl: HighlightedWord }) {
+  const [open, setOpen]     = useState(false);
   const [hearts, setHearts] = useState<number[]>([]);
   const c = COLORS[hl.color] ?? COLORS.gold;
 
   const handleClick = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
     if (!open) {
-      setHearts(h => [...h, Date.now()]);
-      setTimeout(() => setHearts(h => h.slice(1)), 950);
+      const id = Date.now();
+      setHearts(h => [...h, id]);
+      setTimeout(() => setHearts(h => h.filter(x => x !== id)), 1000);
     }
     setOpen(o => !o);
   }, [open]);
 
   return (
     <span style={{ position: "relative", display: "inline" }}>
-      {/* Floating hearts */}
       <AnimatePresence>
         {hearts.map(id => <FloatingHeart key={id} color={c.text} />)}
       </AnimatePresence>
 
-      {/* Podświetlone słowo */}
       <button
         onClick={handleClick}
         aria-expanded={open}
@@ -293,7 +320,7 @@ function HighlightedWordChip({
           color: c.text,
           textShadow: `0 0 16px ${c.glow}`,
           border: "none",
-          borderBottom: `1px solid ${open ? c.border : c.border + "70"}`,
+          borderBottom: `1px solid ${open ? c.border : c.border + "65"}`,
           cursor: "pointer",
           fontFamily: "inherit",
           fontSize: "inherit",
@@ -308,7 +335,7 @@ function HighlightedWordChip({
         onMouseEnter={e => {
           const b = e.currentTarget as HTMLButtonElement;
           b.style.background = c.bg;
-          b.style.textShadow = `0 0 22px ${c.glow}, 0 0 40px ${c.pulse}`;
+          b.style.textShadow = `0 0 22px ${c.glow}, 0 0 44px ${c.pulse}`;
         }}
         onMouseLeave={e => {
           const b = e.currentTarget as HTMLButtonElement;
@@ -319,25 +346,26 @@ function HighlightedWordChip({
         {word}
       </button>
 
-      {/* Modal — renderowany przez portal do body */}
-      {open && (
-        <NoteModal
-          hl={hl}
-          word={word}
-          onClose={() => setOpen(false)}
-        />
-      )}
+      <AnimatePresence>
+        {open && (
+          <NoteModal
+            key="modal"
+            hl={hl}
+            word={word}
+            onClose={() => setOpen(false)}
+          />
+        )}
+      </AnimatePresence>
     </span>
   );
 }
 
 /* ─────────────────────────────────────────────────────
-   LYRIC LINE TEXT — parsowanie z highlightami
+   LYRIC LINE TEXT
 ───────────────────────────────────────────────────── */
 function LyricLineText({ line }: { line: LyricLine }) {
   if (!line.highlighted?.length) return <>{line.text}</>;
 
-  // Sortuj highlights po pozycji w tekście
   const sorted = [...line.highlighted]
     .filter(hl => hl.word)
     .map(hl => ({
@@ -352,7 +380,7 @@ function LyricLineText({ line }: { line: LyricLine }) {
   let key = 0;
 
   for (const { hl, idx } of sorted) {
-    if (idx < cursor) continue; // skip overlapping
+    if (idx < cursor) continue;
     if (idx > cursor) {
       parts.push(<span key={key++}>{line.text.slice(cursor, idx)}</span>);
     }
@@ -369,7 +397,7 @@ function LyricLineText({ line }: { line: LyricLine }) {
 }
 
 /* ─────────────────────────────────────────────────────
-   ACTIVE LINE GLOW — animowany background beam
+   ACTIVE BEAM
 ───────────────────────────────────────────────────── */
 function ActiveBeam() {
   return (
@@ -400,7 +428,7 @@ function EmptyLyrics() {
       style={{ textAlign: "center", padding: "3rem 1rem" }}
     >
       <motion.div
-        animate={{ scale: [1, 1.08, 1], opacity: [0.15, 0.25, 0.15] }}
+        animate={{ scale: [1, 1.1, 1], opacity: [0.12, 0.22, 0.12] }}
         transition={{ repeat: Infinity, duration: 3.5, ease: "easeInOut" }}
         style={{ marginBottom: "0.85rem" }}
       >
@@ -431,30 +459,27 @@ export default function LyricsPanel({ lyrics, currentTime, onSeek }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const activeRef    = useRef<HTMLButtonElement>(null);
 
-  /* Aktywny wers */
   const activeIndex = lyrics.reduce<number>(
     (acc, line, i) => (currentTime >= line.time ? i : acc),
     -1
   );
 
-  /* Smooth spring progress bar */
-  const rawProgress = lyrics.length > 0 && activeIndex >= 0
-    ? (activeIndex + 1) / lyrics.length
-    : 0;
-  const springProgress = useSpring(useMotionValue(rawProgress), {
-    stiffness: 60, damping: 20,
-  });
-
-  useEffect(() => {
-    springProgress.set(rawProgress);
-  }, [rawProgress, springProgress]);
-
-  /* Total highlights */
   const totalHighlights = lyrics.reduce(
     (acc, l) => acc + (l.highlighted?.length ?? 0), 0
   );
 
-  /* Auto-scroll do aktywnego wersu */
+  /* Spring progress bar */
+  const rawProgress = lyrics.length > 0 && activeIndex >= 0
+    ? (activeIndex + 1) / lyrics.length
+    : 0;
+  const motionProgress = useMotionValue(rawProgress);
+  const springProgress = useSpring(motionProgress, { stiffness: 60, damping: 20 });
+
+  useEffect(() => {
+    motionProgress.set(rawProgress);
+  }, [rawProgress, motionProgress]);
+
+  /* Auto-scroll aktywnego wersu */
   useEffect(() => {
     if (!activeRef.current || !containerRef.current) return;
     const container = containerRef.current;
@@ -480,9 +505,9 @@ export default function LyricsPanel({ lyrics, currentTime, onSeek }: Props) {
         <div style={{ display: "flex", alignItems: "center", gap: "0.55rem" }}>
           <motion.div
             animate={activeIndex >= 0
-              ? { scale: [1, 1.2, 1], opacity: [0.7, 1, 0.7] }
-              : {}}
-            transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
+              ? { scale: [1, 1.22, 1], opacity: [0.7, 1, 0.7] }
+              : { scale: 1, opacity: 0.5 }}
+            transition={{ repeat: activeIndex >= 0 ? Infinity : 0, duration: 2, ease: "easeInOut" }}
           >
             <Music2 size={13} style={{ color: "rgba(212,168,83,0.8)" }} />
           </motion.div>
@@ -497,7 +522,6 @@ export default function LyricsPanel({ lyrics, currentTime, onSeek }: Props) {
           </span>
         </div>
 
-        {/* Highlights badge */}
         <AnimatePresence>
           {totalHighlights > 0 && (
             <motion.div
@@ -518,7 +542,7 @@ export default function LyricsPanel({ lyrics, currentTime, onSeek }: Props) {
                 fontSize: "0.63rem",
                 color: "rgba(212,168,83,0.85)",
               }}>
-                {totalHighlights} {totalHighlights === 1 ? "notatka" : totalHighlights < 5 ? "notatki" : "notatek"}
+                {totalHighlights} {pluralNote(totalHighlights)}
               </span>
             </motion.div>
           )}
@@ -532,17 +556,13 @@ export default function LyricsPanel({ lyrics, currentTime, onSeek }: Props) {
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            style={{
-              overflow: "hidden",
-              flexShrink: 0,
-              borderBottom: "1px solid rgba(240,160,184,0.05)",
-            }}
+            style={{ overflow: "hidden", flexShrink: 0, borderBottom: "1px solid rgba(240,160,184,0.05)" }}
           >
             <div style={{
               display: "flex", alignItems: "center", gap: "6px",
               padding: "0.45rem 1.4rem",
             }}>
-              <Heart size={9} style={{ color: "rgba(240,160,184,0.3)", flexShrink: 0 }} />
+              <Heart size={9} style={{ color: "rgba(240,160,184,0.28)", flexShrink: 0 }} />
               <p style={{
                 fontFamily: "'DM Sans', sans-serif",
                 fontSize: "0.66rem",
@@ -557,7 +577,7 @@ export default function LyricsPanel({ lyrics, currentTime, onSeek }: Props) {
         )}
       </AnimatePresence>
 
-      {/* ══ LYRICS SCROLL AREA ══ */}
+      {/* ══ LYRICS SCROLL ══ */}
       <div
         ref={containerRef}
         style={{
@@ -599,7 +619,9 @@ export default function LyricsPanel({ lyrics, currentTime, onSeek }: Props) {
                   cursor: "pointer",
                   textAlign: "left",
                   width: "100%",
-                  padding: isActive ? "0.38rem 0.8rem 0.38rem 0.9rem" : "0.3rem 0.8rem 0.3rem 0.9rem",
+                  padding: isActive
+                    ? "0.38rem 2.5rem 0.38rem 0.9rem"
+                    : "0.3rem 2.5rem 0.3rem 0.9rem",
                   fontFamily: "'Cormorant Garamond', serif",
                   fontSize: isActive ? "1.22rem" : "1.15rem",
                   fontWeight: isActive ? 500 : 300,
@@ -610,15 +632,13 @@ export default function LyricsPanel({ lyrics, currentTime, onSeek }: Props) {
                   outline: "none",
                 }}
               >
-                {/* Animated background beam */}
                 {isActive && <ActiveBeam />}
 
-                {/* Content */}
                 <span style={{ position: "relative", zIndex: 1 }}>
                   <LyricLineText line={line} />
                 </span>
 
-                {/* Timestamp — pokazuje się przy hover */}
+                {/* Timestamp — Framer hover */}
                 <motion.span
                   aria-hidden
                   initial={{ opacity: 0 }}
@@ -649,7 +669,6 @@ export default function LyricsPanel({ lyrics, currentTime, onSeek }: Props) {
         height: "2px",
         background: "rgba(240,160,184,0.06)",
         flexShrink: 0,
-        position: "relative",
         overflow: "hidden",
       }}>
         <motion.div
