@@ -325,7 +325,7 @@ export default function LyricsPanel({ lyrics, currentTime, onSeek }: Props) {
             const isActive   = i === activeIndex;
             const isPast     = i < activeIndex;
             const isFuture   = i > activeIndex;
-            const hasHL      = (line.highlighted?.length ?? 0) > 0;
+
 
             return (
               <motion.button

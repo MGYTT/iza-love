@@ -202,7 +202,7 @@ export default function EditSongPage({
 }) {
   const { slug }               = use(params);
   const router                 = useRouter();
-  const { updateSong, getSong } = useSongStore();
+  const { updateSong } = useSongStore();
 
   const [authed, setAuthed]   = useState(false);
   const [ready,  setReady]    = useState(false);

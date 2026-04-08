@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowLeft, Music2, Heart, ExternalLink } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { useSongStore } from "@/lib/store";
 import LyricsPanel from "@/components/LyricsPanel";
 import type { Song } from "@/lib/types";
@@ -210,8 +210,6 @@ export default function SongPage({
   // Next.js 15 — params jest Promise
   const { slug } = use(params);
 
-  const router  = useRouter();
-  const getSong = useSongStore((s) => s.getSong);
   const [song,  setSong]  = useState<Song | null | undefined>(undefined);
   const [currentTime, setCurrentTime] = useState(0);
   const [ready, setReady] = useState(false);

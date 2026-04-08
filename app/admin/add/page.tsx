@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import {
   Search, Plus, X, Star, ChevronDown, ChevronUp,
-  ArrowLeft, Music2, Loader2,
+  ArrowLeft, Loader2,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSongStore } from "@/lib/store";

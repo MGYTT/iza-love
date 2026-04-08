@@ -314,7 +314,7 @@ function buildParts(text: string, highlights: HighlightedWord[]): Part[] {
 
   highlights.forEach((hl, hlIndex) => {
     if (!hl.word) return;
-    let searchFrom = 0;
+    const searchFrom = 0;
     const lower    = text.toLowerCase();
     const wordLow  = hl.word.toLowerCase();
     const idx      = lower.indexOf(wordLow, searchFrom);
