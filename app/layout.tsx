@@ -6,6 +6,7 @@ import GeoBackground from "@/components/GeoBackground";
 import AmbientPlayer from "@/components/AmbientPlayer";
 import NightModeProvider from "@/components/NightModeProvider";
 import StoreHydration from "@/components/StoreHydration";
+import LoadingWrapper from "@/components/LoadingWrapper";
 
 export const metadata: Metadata = {
   title: "Nasza Historia ♥ Iza",
@@ -22,6 +23,9 @@ export default function RootLayout({
     <html lang="pl">
       <body>
         <NightModeProvider>
+          <LoadingWrapper>
+          {children}
+        </LoadingWrapper>
           <GeoBackground />
           <StoreHydration />
           <HeartParticles />

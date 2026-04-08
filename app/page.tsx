@@ -34,7 +34,7 @@ export default async function HomePage() {
   );
 
   /* Najwcześniejsza data wspomnienia jako "data początku" */
-  const firstDate = sorted[0]?.date ?? "2023-01-01";
+  const firstDate = "2023-02-03";
 
   return (
     <main style={{ minHeight: "100dvh", overflowX: "hidden" }}>
