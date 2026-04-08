@@ -1,26 +1,150 @@
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400;1,600&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap');
+
 @import "tailwindcss";
 
+/* ── Tokens ─────────────────────────────────────────── */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --bg:        #100508;
+  --surface:   #1e0b12;
+  --card:      #2a1019;
+  --border:    rgba(240, 160, 184, 0.12);
+  --blush:     #f0a0b8;
+  --petal:     #f7cdd8;
+  --gold:      #d4a853;
+  --muted:     #9a6070;
+  --faint:     rgba(240, 160, 184, 0.25);
+  --glow-pink: rgba(240, 100, 140, 0.15);
+  --glow-gold: rgba(212, 168, 83, 0.25);
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+/* ── Base ────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  scroll-behavior: smooth;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: 'DM Sans', system-ui, sans-serif;
+  background-color: var(--bg);
+  color: var(--petal);
+  min-height: 100dvh;
+  overflow-x: hidden;
+  /* Subtle noise texture over whole bg */
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+}
+
+img, picture, video, canvas, svg { display: block; max-width: 100%; }
+
+::selection {
+  background: rgba(212, 168, 83, 0.3);
+  color: #fff;
+}
+
+:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+/* ── Scrollbar ───────────────────────────────────────── */
+::-webkit-scrollbar { width: 3px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(to bottom, var(--gold), var(--blush));
+  border-radius: 2px;
+}
+
+/* ── Glass card ──────────────────────────────────────── */
+.glass {
+  background: rgba(42, 16, 25, 0.6);
+  backdrop-filter: blur(20px) saturate(1.4);
+  -webkit-backdrop-filter: blur(20px) saturate(1.4);
+  border: 1px solid var(--border);
+  border-radius: 1.25rem;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Shine effect on glass cards */
+.glass::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.04) 0%,
+    transparent 50%,
+    rgba(255, 255, 255, 0.01) 100%
+  );
+  pointer-events: none;
+  border-radius: inherit;
+}
+
+/* ── Waveform ────────────────────────────────────────── */
+@keyframes waveBar {
+  0%, 100% { transform: scaleY(0.35); }
+  50%       { transform: scaleY(1); }
+}
+.wave-bar {
+  animation: waveBar 0.9s ease-in-out infinite;
+  transform-origin: bottom;
+}
+.wave-bar:nth-child(1) { animation-delay: 0.00s; }
+.wave-bar:nth-child(2) { animation-delay: 0.08s; }
+.wave-bar:nth-child(3) { animation-delay: 0.16s; }
+.wave-bar:nth-child(4) { animation-delay: 0.24s; }
+.wave-bar:nth-child(5) { animation-delay: 0.12s; }
+.wave-bar:nth-child(6) { animation-delay: 0.20s; }
+
+/* ── Active lyric ────────────────────────────────────── */
+.lyric-active {
+  color: var(--gold) !important;
+  font-weight: 500;
+  text-shadow: 0 0 20px rgba(212, 168, 83, 0.4);
+}
+
+/* ── Night mode ──────────────────────────────────────── */
+[data-night="true"] {
+  --bg:      #060205;
+  --surface: #100508;
+  --card:    #1a0a10;
+}
+
+/* ── Keyframes ───────────────────────────────────────── */
+@keyframes fadeSlideUp {
+  from { opacity: 0; transform: translateY(32px); }
+  to   { opacity: 1; transform: translateY(0);    }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.92); }
+  to   { opacity: 1; transform: scale(1);    }
+}
+
+/* ── Timeline vertical line ──────────────────────────── */
+.timeline-line {
+  background: linear-gradient(
+    to bottom,
+    transparent,
+    rgba(212, 168, 83, 0.4) 20%,
+    rgba(240, 160, 184, 0.3) 80%,
+    transparent
+  );
+}
+
+/* ── Reduced motion ──────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
