@@ -24,13 +24,15 @@ export default function RootLayout({
       <body>
         <NightModeProvider>
           <LoadingWrapper>
-          {children}
-        </LoadingWrapper>
+            {children}
+          </LoadingWrapper>
+
+          {/* Globalne overlaye — POZA children, ale tylko raz */}
           <GeoBackground />
           <StoreHydration />
           <HeartParticles />
-          {children}
           <AmbientPlayer />
+
           <Toaster
             position="bottom-right"
             toastOptions={{
