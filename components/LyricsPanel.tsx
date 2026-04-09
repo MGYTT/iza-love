@@ -1,7 +1,14 @@
 "use client";
 
-import { useEffect, useRef, useState, useCallback } from "react";
-import { motion, AnimatePresence, useMotionValue, useSpring } from "framer-motion";
+import {
+  useEffect, useRef, useState,
+  useCallback, useId,
+} from "react";
+import { createPortal } from "react-dom";
+import {
+  motion, AnimatePresence,
+  useMotionValue, useSpring,
+} from "framer-motion";
 import { Music2, Sparkles, Heart, X } from "lucide-react";
 import type { LyricLine, HighlightedWord } from "@/lib/types";
 
@@ -52,12 +59,16 @@ function FloatingHeart({ color }: { color: string }) {
   return (
     <motion.div
       initial={{ opacity: 1, y: 0, x: 0, scale: 0.6 }}
-      animate={{ opacity: 0, y: -30, x: (Math.random() - 0.5) * 22, scale: 1.2 }}
-      transition={{ duration: 0.95, ease: "easeOut" }}
+      animate={{
+        opacity: 0,
+        y: -32,
+        x: (Math.random() - 0.5) * 24,
+        scale: 1.3,
+      }}
+      transition={{ duration: 0.9, ease: "easeOut" }}
       style={{
         position: "absolute",
-        top: "-4px",
-        left: "50%",
+        top: "-4px", left: "50%",
         transform: "translateX(-50%)",
         pointerEvents: "none",
         zIndex: 70,
@@ -72,19 +83,21 @@ function FloatingHeart({ color }: { color: string }) {
 }
 
 /* ─────────────────────────────────────────────────────
-   NOTE MODAL
+   NOTE MODAL  ← renderowany przez Portal do <body>
+   Dzięki temu `position: fixed` działa poprawnie
+   na każdym urządzeniu niezależnie od rodzica.
 ───────────────────────────────────────────────────── */
-function NoteModal({
-  hl,
-  word,
-  onClose,
-}: {
+interface NoteModalProps {
   hl: HighlightedWord;
   word: string;
   onClose: () => void;
-}) {
-  const c = COLORS[hl.color] ?? COLORS.gold;
+}
 
+function NoteModal({ hl, word, onClose }: NoteModalProps) {
+  const c  = COLORS[hl.color] ?? COLORS.gold;
+  const id = useId();
+
+  /* Escape key */
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
@@ -93,136 +106,158 @@ function NoteModal({
     return () => window.removeEventListener("keydown", handler);
   }, [onClose]);
 
+  /* Prevent body scroll */
   useEffect(() => {
+    const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
-    return () => { document.body.style.overflow = ""; };
+    return () => { document.body.style.overflow = prev; };
   }, []);
 
-  return (
-    <>
-      {/* Backdrop */}
+  /* Focus trap — przenieś focus na modal */
+  const modalRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    modalRef.current?.focus();
+  }, []);
+
+  const modal = (
+    <AnimatePresence>
+      {/* ── Backdrop ── */}
       <motion.div
+        key={`backdrop-${id}`}
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        transition={{ duration: 0.24 }}
+        transition={{ duration: 0.22 }}
         onClick={onClose}
         style={{
           position: "fixed",
           inset: 0,
-          zIndex: 90,
-          background: "rgba(6,1,4,0.82)",
-          backdropFilter: "blur(8px)",
-          WebkitBackdropFilter: "blur(8px)",
+          zIndex: 9998,
+          background: "rgba(5,1,3,0.88)",
+          backdropFilter: "blur(10px)",
+          WebkitBackdropFilter: "blur(10px)",
           cursor: "pointer",
         }}
       />
 
-      {/* Modal */}
+      {/* ── Modal box ── */}
       <motion.div
+        key={`modal-${id}`}
+        ref={modalRef}
         role="dialog"
         aria-modal="true"
         aria-label={`Notatka do słowa: ${word}`}
-        initial={{ opacity: 0, scale: 0.86, y: 28 }}
+        tabIndex={-1}
+        initial={{ opacity: 0, scale: 0.84, y: 32 }}
         animate={{ opacity: 1, scale: 1,    y: 0  }}
-        exit={{    opacity: 0, scale: 0.86, y: 28 }}
-        transition={{ duration: 0.34, ease: [0.16, 1, 0.3, 1] }}
+        exit={{    opacity: 0, scale: 0.84, y: 32 }}
+        transition={{ duration: 0.36, ease: [0.16, 1, 0.3, 1] }}
         onClick={(e) => e.stopPropagation()}
         style={{
+          /* Kluczowe: fixed + translate — działa bez względu na rodzica */
           position: "fixed",
           top: "50%",
           left: "50%",
           transform: "translate(-50%, -50%)",
-          zIndex: 91,
-          width: "min(440px, calc(100vw - 2.5rem))",
-          background: "rgba(12,3,8,0.99)",
-          backdropFilter: "blur(36px)",
-          WebkitBackdropFilter: "blur(36px)",
-          border: `1px solid ${c.border}38`,
-          borderRadius: "1.5rem",
-          padding: "2rem 2rem 1.8rem",
+          zIndex: 9999,
+
+          width: "min(460px, calc(100vw - 2rem))",
+          maxHeight: "calc(100dvh - 4rem)",
+          overflowY: "auto",
+
+          background: "rgba(10,2,7,0.98)",
+          backdropFilter: "blur(40px)",
+          WebkitBackdropFilter: "blur(40px)",
+          border: `1px solid ${c.border}35`,
+          borderRadius: "1.6rem",
+          padding: "2.1rem 2rem 1.9rem",
+          outline: "none",
+
           boxShadow: `
-            0 32px 80px rgba(0,0,0,0.85),
-            0 0 0 1px rgba(255,255,255,0.03),
-            0 0 80px ${c.glow}20
+            0 40px 90px rgba(0,0,0,0.9),
+            0 0 0 1px rgba(255,255,255,0.025),
+            0 0 100px ${c.glow}18
           `,
         }}
       >
-        {/* Ambient glow */}
-        <div style={{
+        {/* Ambient glow blob */}
+        <div aria-hidden style={{
           position: "absolute",
-          top: "-60px", left: "50%",
+          top: "-55px", left: "50%",
           transform: "translateX(-50%)",
-          width: "240px", height: "140px",
-          background: `radial-gradient(ellipse, ${c.glow}18, transparent 70%)`,
+          width: "260px", height: "150px",
+          background: `radial-gradient(ellipse, ${c.glow}16, transparent 68%)`,
           pointerEvents: "none",
           borderRadius: "50%",
           zIndex: 0,
         }} />
 
-        {/* Close */}
+        {/* ── Close button ── */}
         <button
           onClick={onClose}
           aria-label="Zamknij"
           style={{
             position: "absolute",
             top: "1rem", right: "1rem",
-            background: "rgba(240,160,184,0.06)",
-            border: "1px solid rgba(240,160,184,0.1)",
+            width: "32px", height: "32px",
             borderRadius: "50%",
-            width: "30px", height: "30px",
+            background: "rgba(240,160,184,0.05)",
+            border: "1px solid rgba(240,160,184,0.1)",
             display: "flex", alignItems: "center", justifyContent: "center",
             cursor: "pointer",
-            color: "rgba(240,160,184,0.38)",
-            transition: "all 0.2s",
+            color: "rgba(240,160,184,0.35)",
+            transition: "all 0.2s ease",
             zIndex: 2,
           }}
           onMouseEnter={e => {
-            const b = e.currentTarget as HTMLButtonElement;
-            b.style.background = "rgba(240,160,184,0.13)";
-            b.style.color = "rgba(240,160,184,0.85)";
-            b.style.borderColor = "rgba(240,160,184,0.25)";
+            const b = e.currentTarget;
+            b.style.background = "rgba(240,160,184,0.12)";
+            b.style.color      = "rgba(240,160,184,0.9)";
+            b.style.borderColor = "rgba(240,160,184,0.28)";
           }}
           onMouseLeave={e => {
-            const b = e.currentTarget as HTMLButtonElement;
-            b.style.background = "rgba(240,160,184,0.06)";
-            b.style.color = "rgba(240,160,184,0.38)";
+            const b = e.currentTarget;
+            b.style.background  = "rgba(240,160,184,0.05)";
+            b.style.color       = "rgba(240,160,184,0.35)";
             b.style.borderColor = "rgba(240,160,184,0.1)";
           }}
         >
           <X size={13} />
         </button>
 
-        {/* Content */}
+        {/* ── Content ── */}
         <div style={{ position: "relative", zIndex: 1 }}>
 
-          {/* Label */}
-          <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "1.1rem" }}>
+          {/* Label row */}
+          <div style={{
+            display: "flex", alignItems: "center",
+            gap: "6px", marginBottom: "1.15rem",
+          }}>
             <Sparkles size={11} style={{ color: c.text, flexShrink: 0 }} />
             <span style={{
               fontFamily: "'DM Sans', sans-serif",
               fontSize: "0.62rem",
-              letterSpacing: "0.15em",
+              letterSpacing: "0.16em",
               textTransform: "uppercase",
-              color: `${c.text}88`,
+              color: `${c.text}80`,
             }}>
               Osobista notatka
             </span>
           </div>
 
-          {/* Word chip — bez polskich cudzysłowów w JSX */}
+          {/* Word chip */}
           <div style={{
             display: "inline-flex",
             alignItems: "center",
             background: c.bg,
-            border: `1px solid ${c.border}45`,
-            borderRadius: "0.6rem",
-            padding: "0.3rem 0.85rem",
-            marginBottom: "1.2rem",
+            border: `1px solid ${c.border}40`,
+            borderRadius: "0.65rem",
+            padding: "0.3rem 0.9rem",
+            marginBottom: "1.25rem",
           }}>
             <span style={{
               fontFamily: "'Cormorant Garamond', serif",
-              fontSize: "1.15rem",
+              fontSize: "1.18rem",
               fontWeight: 600,
               fontStyle: "italic",
               color: c.text,
@@ -235,59 +270,80 @@ function NoteModal({
           {/* Divider */}
           <div style={{
             height: "1px",
-            background: `linear-gradient(to right, transparent, ${c.border}35, transparent)`,
-            marginBottom: "1.2rem",
+            background: `linear-gradient(
+              to right,
+              transparent,
+              ${c.border}30,
+              transparent
+            )`,
+            marginBottom: "1.25rem",
           }} />
 
-          {/* Note text */}
+          {/* Note body */}
           <p style={{
             fontFamily: "'Cormorant Garamond', serif",
             fontSize: "1.22rem",
             fontStyle: "italic",
             fontWeight: 300,
             color: "#f7cdd8",
-            lineHeight: 1.72,
+            lineHeight: 1.76,
             margin: 0,
+            whiteSpace: "pre-wrap",
+            wordBreak: "break-word",
           }}>
             &ldquo;{hl.note}&rdquo;
           </p>
 
           {/* Footer */}
           <div style={{
-            marginTop: "1.4rem",
+            marginTop: "1.5rem",
             paddingTop: "1rem",
             borderTop: "1px solid rgba(240,160,184,0.06)",
             display: "flex",
             alignItems: "center",
             justifyContent: "flex-end",
-            gap: "5px",
+            gap: "6px",
           }}>
             <motion.div
-              animate={{ scale: [1, 1.3, 1] }}
-              transition={{ repeat: Infinity, duration: 1.8, ease: "easeInOut" }}
+              animate={{ scale: [1, 1.32, 1] }}
+              transition={{ repeat: Infinity, duration: 1.9, ease: "easeInOut" }}
             >
-              <Heart size={10} fill={`${c.text}50`} style={{ color: `${c.text}50` }} />
+              <Heart
+                size={10}
+                fill={`${c.text}45`}
+                style={{ color: `${c.text}45` }}
+              />
             </motion.div>
             <span style={{
               fontFamily: "'Cormorant Garamond', serif",
-              fontSize: "0.82rem",
+              fontSize: "0.8rem",
               fontStyle: "italic",
-              color: `${c.text}45`,
+              color: `${c.text}40`,
             }}>
               od Ciebie, dla Izy
             </span>
           </div>
         </div>
       </motion.div>
-    </>
+    </AnimatePresence>
   );
+
+  /* ← PORTAL: renderuj bezpośrednio do <body> */
+  return typeof window !== "undefined"
+    ? createPortal(modal, document.body)
+    : null;
 }
 
 /* ─────────────────────────────────────────────────────
    HIGHLIGHTED WORD CHIP
 ───────────────────────────────────────────────────── */
-function HighlightedWordChip({ word, hl }: { word: string; hl: HighlightedWord }) {
-  const [open, setOpen]     = useState(false);
+function HighlightedWordChip({
+  word, hl,
+}: {
+  word: string;
+  hl: HighlightedWord;
+}) {
+  const [open,   setOpen]   = useState(false);
   const [hearts, setHearts] = useState<number[]>([]);
   const c = COLORS[hl.color] ?? COLORS.gold;
 
@@ -303,10 +359,14 @@ function HighlightedWordChip({ word, hl }: { word: string; hl: HighlightedWord }
 
   return (
     <span style={{ position: "relative", display: "inline" }}>
+      {/* Floating hearts */}
       <AnimatePresence>
-        {hearts.map(id => <FloatingHeart key={id} color={c.text} />)}
+        {hearts.map(id => (
+          <FloatingHeart key={id} color={c.text} />
+        ))}
       </AnimatePresence>
 
+      {/* Underlined word button */}
       <button
         onClick={handleClick}
         aria-expanded={open}
@@ -316,7 +376,7 @@ function HighlightedWordChip({ word, hl }: { word: string; hl: HighlightedWord }
           color: c.text,
           textShadow: `0 0 16px ${c.glow}`,
           border: "none",
-          borderBottom: `1px solid ${open ? c.border : c.border + "65"}`,
+          borderBottom: `1.5px solid ${open ? c.border : c.border + "55"}`,
           cursor: "pointer",
           fontFamily: "inherit",
           fontSize: "inherit",
@@ -325,27 +385,30 @@ function HighlightedWordChip({ word, hl }: { word: string; hl: HighlightedWord }
           lineHeight: "inherit",
           padding: "0 2px",
           borderRadius: "2px",
-          transition: "all 0.2s ease",
+          transition: "all 0.18s ease",
           display: "inline",
         }}
         onMouseEnter={e => {
-          const b = e.currentTarget as HTMLButtonElement;
-          b.style.background = c.bg;
-          b.style.textShadow = `0 0 22px ${c.glow}, 0 0 44px ${c.pulse}`;
+          const b = e.currentTarget;
+          b.style.background  = c.bg;
+          b.style.borderColor = c.border;
+          b.style.textShadow  = `0 0 22px ${c.glow}, 0 0 44px ${c.pulse}`;
         }}
         onMouseLeave={e => {
-          const b = e.currentTarget as HTMLButtonElement;
-          b.style.background = open ? c.bg : "transparent";
-          b.style.textShadow = `0 0 16px ${c.glow}`;
+          const b = e.currentTarget;
+          b.style.background  = open ? c.bg : "transparent";
+          b.style.borderColor = open ? c.border : `${c.border}55`;
+          b.style.textShadow  = `0 0 16px ${c.glow}`;
         }}
       >
         {word}
       </button>
 
+      {/* Modal przez Portal */}
       <AnimatePresence>
         {open && (
           <NoteModal
-            key="modal"
+            key="note-modal"
             hl={hl}
             word={word}
             onClose={() => setOpen(false)}
@@ -373,7 +436,7 @@ function LyricLineText({ line }: { line: LyricLine }) {
 
   const parts: React.ReactNode[] = [];
   let cursor = 0;
-  let key = 0;
+  let key    = 0;
 
   for (const { hl, idx } of sorted) {
     if (idx < cursor) continue;
@@ -381,7 +444,9 @@ function LyricLineText({ line }: { line: LyricLine }) {
       parts.push(<span key={key++}>{line.text.slice(cursor, idx)}</span>);
     }
     const exactWord = line.text.slice(idx, idx + hl.word.length);
-    parts.push(<HighlightedWordChip key={key++} word={exactWord} hl={hl} />);
+    parts.push(
+      <HighlightedWordChip key={key++} word={exactWord} hl={hl} />
+    );
     cursor = idx + hl.word.length;
   }
 
@@ -404,7 +469,8 @@ function ActiveBeam() {
         position: "absolute",
         inset: 0,
         borderRadius: "0 0.45rem 0.45rem 0",
-        background: "linear-gradient(to right, rgba(212,168,83,0.08), transparent 80%)",
+        background:
+          "linear-gradient(to right, rgba(212,168,83,0.09), transparent 80%)",
         pointerEvents: "none",
         zIndex: 0,
       }}
@@ -428,7 +494,10 @@ function EmptyLyrics() {
         transition={{ repeat: Infinity, duration: 3.5, ease: "easeInOut" }}
         style={{ marginBottom: "0.85rem" }}
       >
-        <Music2 size={30} style={{ color: "rgba(240,160,184,0.2)", margin: "0 auto" }} />
+        <Music2
+          size={30}
+          style={{ color: "rgba(240,160,184,0.2)", margin: "0 auto" }}
+        />
       </motion.div>
       <p style={{
         fontFamily: "'Cormorant Garamond', serif",
@@ -464,30 +533,37 @@ export default function LyricsPanel({ lyrics, currentTime, onSeek }: Props) {
     (acc, l) => acc + (l.highlighted?.length ?? 0), 0
   );
 
-  /* Spring progress */
-  const rawProgress = lyrics.length > 0 && activeIndex >= 0
-    ? (activeIndex + 1) / lyrics.length
-    : 0;
+  /* Spring progress bar */
+  const rawProgress =
+    lyrics.length > 0 && activeIndex >= 0
+      ? (activeIndex + 1) / lyrics.length
+      : 0;
   const motionProgress = useMotionValue(rawProgress);
-  const springProgress = useSpring(motionProgress, { stiffness: 60, damping: 20 });
+  const springProgress = useSpring(motionProgress, {
+    stiffness: 60, damping: 20,
+  });
 
   useEffect(() => {
     motionProgress.set(rawProgress);
   }, [rawProgress, motionProgress]);
 
-  /* Auto-scroll */
+  /* Auto-scroll aktywnego wersu */
   useEffect(() => {
     if (!activeRef.current || !containerRef.current) return;
     const container = containerRef.current;
     const el        = activeRef.current;
-    const scrollTo  = el.offsetTop - container.clientHeight / 2 + el.offsetHeight / 2;
+    const scrollTo  =
+      el.offsetTop - container.clientHeight / 2 + el.offsetHeight / 2;
     container.scrollTo({ top: Math.max(0, scrollTo), behavior: "smooth" });
   }, [activeIndex]);
 
   return (
     <div
       className="glass"
-      style={{ display: "flex", flexDirection: "column", padding: 0, overflow: "hidden" }}
+      style={{
+        display: "flex", flexDirection: "column",
+        padding: 0, overflow: "hidden",
+      }}
     >
       {/* ══ HEADER ══ */}
       <div style={{
@@ -557,8 +633,7 @@ export default function LyricsPanel({ lyrics, currentTime, onSeek }: Props) {
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
             style={{
-              overflow: "hidden",
-              flexShrink: 0,
+              overflow: "hidden", flexShrink: 0,
               borderBottom: "1px solid rgba(240,160,184,0.05)",
             }}
           >
@@ -566,7 +641,10 @@ export default function LyricsPanel({ lyrics, currentTime, onSeek }: Props) {
               display: "flex", alignItems: "center", gap: "6px",
               padding: "0.45rem 1.4rem",
             }}>
-              <Heart size={9} style={{ color: "rgba(240,160,184,0.28)", flexShrink: 0 }} />
+              <Heart
+                size={9}
+                style={{ color: "rgba(240,160,184,0.28)", flexShrink: 0 }}
+              />
               <p style={{
                 fontFamily: "'DM Sans', sans-serif",
                 fontSize: "0.66rem",
@@ -618,7 +696,9 @@ export default function LyricsPanel({ lyrics, currentTime, onSeek }: Props) {
                   position: "relative",
                   background: "transparent",
                   border: "none",
-                  borderLeft: `2px solid ${isActive ? "rgba(212,168,83,0.55)" : "transparent"}`,
+                  borderLeft: `2px solid ${
+                    isActive ? "rgba(212,168,83,0.55)" : "transparent"
+                  }`,
                   borderRadius: "0 0.45rem 0.45rem 0",
                   cursor: "pointer",
                   textAlign: "left",
@@ -631,8 +711,11 @@ export default function LyricsPanel({ lyrics, currentTime, onSeek }: Props) {
                   fontWeight: isActive ? 500 : 300,
                   lineHeight: 1.5,
                   color: isActive ? "#d4a853" : "#f7cdd8",
-                  textShadow: isActive ? "0 0 22px rgba(212,168,83,0.4)" : "none",
-                  transition: "border-color 0.3s, color 0.3s, text-shadow 0.3s, padding 0.3s, font-size 0.3s",
+                  textShadow: isActive
+                    ? "0 0 22px rgba(212,168,83,0.4)"
+                    : "none",
+                  transition:
+                    "border-color 0.3s, color 0.3s, text-shadow 0.3s, padding 0.3s, font-size 0.3s",
                   outline: "none",
                 }}
               >
@@ -648,8 +731,7 @@ export default function LyricsPanel({ lyrics, currentTime, onSeek }: Props) {
                   whileHover={{ opacity: 1 }}
                   style={{
                     position: "absolute",
-                    right: "0.6rem",
-                    top: "50%",
+                    right: "0.6rem", top: "50%",
                     transform: "translateY(-50%)",
                     fontFamily: "'DM Sans', sans-serif",
                     fontSize: "0.58rem",
@@ -679,7 +761,8 @@ export default function LyricsPanel({ lyrics, currentTime, onSeek }: Props) {
             height: "100%",
             scaleX: springProgress,
             transformOrigin: "left",
-            background: "linear-gradient(to right, #d4a853, rgba(240,160,184,0.65))",
+            background:
+              "linear-gradient(to right, #d4a853, rgba(240,160,184,0.65))",
           }}
         />
       </div>
