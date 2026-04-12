@@ -8,6 +8,7 @@ import {
   Plus, Trash2, ExternalLink, Music2,
   LogOut, Sparkles, RefreshCw, Edit3,
   BarChart2, Clock, Heart,
+  Bell,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
@@ -484,7 +485,11 @@ export default function AdminDashboard() {
               style={{ transition: "transform 0.6s", transform: spinning ? "rotate(360deg)" : "none" }}
             />
           </button>
-
+<Link href="/admin/notifications" style={{ textDecoration: "none" }}>
+  <button style={ghostBtn}>
+    <Bell size={13} /> Powiadomienia
+  </button>
+</Link>
           <Link href="/" style={{ textDecoration: "none" }}>
             <button
               style={ghostBtn}

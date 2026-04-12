@@ -7,18 +7,16 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-/* ── Twoje romantyczne wiadomości ── */
-const MESSAGES = [
-  { title: "Dzień dobry, Izo ♥",      body: "Mam nadzieję że śnił Ci się piękny sen 🌙"       },
-  { title: "Myślę o Tobie ♥",         body: "Właśnie usłyszałem naszą piosenkę..."             },
-  { title: "Dobranoc, kochanie 🌙",    body: "Słodkich snów. Kocham Cię najbardziej na świecie" },
-  { title: "Nasza Historia czeka ♥",  body: "Mam dla Ciebie niespodziankę na stronie 🎵"       },
-  { title: "Już tęsknię ♥",           body: "Liczę godziny do kiedy znów Cię zobaczę"          },
-  { title: "Uśmiechnij się! 🌸",       body: "Bo jesteś najpiękniejszą osobą na świecie"        },
+const DAILY_MESSAGES = [
+  { title: "Dzień dobry, Izo ♥",     body: "Mam nadzieję że śnił Ci się piękny sen 🌙"        },
+  { title: "Myślę o Tobie ♥",        body: "Właśnie usłyszałem naszą piosenkę..."              },
+  { title: "Dobranoc, kochanie 🌙",   body: "Słodkich snów. Kocham Cię najbardziej na świecie" },
+  { title: "Uśmiechnij się! 🌸",      body: "Bo jesteś najpiękniejszą osobą na świecie"         },
+  { title: "Już tęsknię ♥",          body: "Liczę godziny do kiedy znów Cię zobaczę"           },
+  { title: "Nasza Historia czeka ♥", body: "Mam dla Ciebie niespodziankę na stronie 🎵"        },
 ];
 
 export async function GET(req: NextRequest) {
-  /* Zabezpieczenie przed nieautoryzowanym wywołaniem */
   const secret = req.headers.get("authorization");
   if (secret !== `Bearer ${process.env.CRON_SECRET}`) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -30,36 +28,65 @@ export async function GET(req: NextRequest) {
 
   if (!subs?.length) return NextResponse.json({ sent: 0 });
 
-  /* Wybierz losową wiadomość */
-  const msg = MESSAGES[Math.floor(Math.random() * MESSAGES.length)];
+  /* ── 1. Wyślij zaplanowane powiadomienia które już minęły ── */
+  const now = new Date().toISOString();
+  const { data: scheduled } = await supabase
+    .from("scheduled_notifications")
+    .select("*")
+    .eq("sent", false)
+    .lte("scheduled_for", now);
 
-  let sent = 0;
-  const expired: string[] = [];
+  let sentScheduled = 0;
+  for (const notif of scheduled ?? []) {
+    for (const row of subs) {
+      try {
+        await sendPush(row.subscription, {
+          title: notif.title,
+          body:  notif.body,
+          url:   notif.url,
+          icon:  notif.icon,
+          tag:   "scheduled",
+        });
+        sentScheduled++;
+      } catch {}
+    }
+    /* Oznacz jako wysłane */
+    await supabase
+      .from("scheduled_notifications")
+      .update({ sent: true })
+      .eq("id", notif.id);
+  }
 
-  for (const row of subs) {
-    try {
-      await sendPush(row.subscription, {
-        ...msg,
-        icon: "/icon-192.png",
-        url:  "/",
-        tag:  "love-daily",
-      });
-      sent++;
-    } catch (err: unknown) {
-      /* Subskrypcja wygasła — usuń */
-      if ((err as { statusCode?: number }).statusCode === 410) {
-        expired.push(row.subscription.endpoint);
+  /* ── 2. Codzienna losowa wiadomość (tylko rano o 8:00) ── */
+  const hour = new Date().getUTCHours(); // 8 UTC = 10 CEST
+  let sentDaily = 0;
+
+  if (hour === 6) { // 6 UTC = 8:00 CEST
+    const msg = DAILY_MESSAGES[Math.floor(Math.random() * DAILY_MESSAGES.length)];
+    const expired: string[] = [];
+
+    for (const row of subs) {
+      try {
+        await sendPush(row.subscription, { ...msg, tag: "daily" });
+        sentDaily++;
+      } catch (err: unknown) {
+        if ((err as { statusCode?: number }).statusCode === 410) {
+          expired.push(row.subscription.endpoint);
+        }
       }
+    }
+
+    if (expired.length) {
+      await supabase
+        .from("push_subscriptions")
+        .delete()
+        .in("endpoint", expired);
     }
   }
 
-  /* Usuń wygasłe subskrypcje */
-  if (expired.length) {
-    await supabase
-      .from("push_subscriptions")
-      .delete()
-      .in("endpoint", expired);
-  }
-
-  return NextResponse.json({ sent, expired: expired.length });
+  return NextResponse.json({
+    ok: true,
+    sentScheduled,
+    sentDaily,
+  });
 }
