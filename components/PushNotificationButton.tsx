@@ -11,26 +11,34 @@ function urlBase64ToUint8Array(base64: string) {
   return Uint8Array.from([...raw].map(c => c.charCodeAt(0)));
 }
 
+type SupportState = "full" | "ios-browser" | "none";
+
 export default function PushNotificationButton() {
   const [status,    setStatus]    = useState<"idle"|"granted"|"denied"|"loading">("idle");
-  const [supported, setSupported] = useState(false);
+  const [support,   setSupport]   = useState<SupportState>("none");
   const [mounted,   setMounted]   = useState(false);
 
   useEffect(() => {
-    /* Cały dostęp do browser API wyłącznie w useEffect */
     setMounted(true);
 
-    const isSupported =
-      typeof window !== "undefined" &&
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+      (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+    const isStandalone = window.matchMedia("(display-mode: standalone)").matches;
+
+    const isFullySupported =
       "serviceWorker" in navigator &&
-      "PushManager" in window;
+      "PushManager" in window &&
+      "Notification" in window;
 
-    setSupported(isSupported);
-
-    if (isSupported) {
+    if (isFullySupported) {
+      setSupport("full");
       if (Notification.permission === "granted") setStatus("granted");
       if (Notification.permission === "denied")  setStatus("denied");
+    } else if (isIOS && !isStandalone) {
+      // iOS Safari w przeglądarce — pokaż instrukcję
+      setSupport("ios-browser");
     }
+    // else: stara przeglądarka bez wsparcia → pozostaje "none" → return null
   }, []);
 
   const subscribe = async () => {
@@ -59,9 +67,39 @@ export default function PushNotificationButton() {
     }
   };
 
-  /* Nie renderuj nic podczas SSR ani gdy brak wsparcia */
-  if (!mounted || !supported) return null;
+  if (!mounted) return null;
 
+  // iOS w zwykłej przeglądarce — pokaż instrukcję zamiast nic
+  if (support === "ios-browser") {
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 6 }}
+        animate={{ opacity: 1, y: 0 }}
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: "8px",
+          padding: "0.55rem 1.25rem",
+          background: "rgba(212,168,83,0.06)",
+          border: "1px solid rgba(212,168,83,0.18)",
+          borderRadius: "999px",
+          fontFamily: "'DM Sans', sans-serif",
+          fontSize: "0.72rem",
+          color: "rgba(212,168,83,0.55)",
+          textAlign: "center",
+          maxWidth: "300px",
+        }}
+      >
+        <Bell size={12} style={{ flexShrink: 0 }} />
+        Dodaj do ekranu głównego, by włączyć powiadomienia ♥
+      </motion.div>
+    );
+  }
+
+  // Brak jakiegokolwiek wsparcia (stara przeglądarka)
+  if (support === "none") return null;
+
+  // Pełne wsparcie (Android, Desktop, iOS PWA)
   return (
     <AnimatePresence mode="wait">
       {status === "granted" ? (
