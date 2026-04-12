@@ -40,7 +40,7 @@ export async function POST(req: NextRequest) {
       await sendPush(row.subscription, {
         title, body,
         url:  url   ?? "/",
-        icon: icon  ?? "/icon-192.png",
+        icon: icon  ?? "/icon-192.jpg",
         tag:  "custom",
       });
       sent++;
