@@ -12,6 +12,10 @@ export const metadata: Metadata = {
   title: "Nasza Historia ♥ Iza",
   description: "Chronologiczna historia miłości opowiedziana przez nasze piosenki.",
   icons: { icon: "/favicon.ico" },
+  // ✅ DODAJ:
+  other: {
+    "format-detection": "telephone=no",
+  },
 };
 
 export default function RootLayout({

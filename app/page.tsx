@@ -4,16 +4,9 @@ import { Heart, Music, Sparkles } from "lucide-react";
 import Timeline from "@/components/Timeline";
 import { getAllSongs } from "@/lib/songs-db";
 import PushNotificationButton from "@/components/PushNotificationButton";
+import DaysTogether from "@/components/DaysTogether";
 
 export const revalidate = 0;
-
-/* ── Licznik dni razem ── */
-function DaysTogther({ startDate }: { startDate: string }) {
-  const start = new Date(startDate).getTime();
-  const now   = Date.now();
-  const days  = Math.floor((now - start) / (1000 * 60 * 60 * 24));
-  return <>{days.toLocaleString("pl-PL")}</>;
-}
 
 /* ── Skeleton card ── */
 function SkeletonCard({ delay }: { delay: number }) {
@@ -206,7 +199,7 @@ export default async function HomePage() {
                 lineHeight: 1,
                 marginBottom: "5px",
               }}>
-                <DaysTogther startDate={firstDate} />
+                <DaysTogether startDate={firstDate} />
               </div>
               <div style={{
                 fontFamily: "'DM Sans', sans-serif",

@@ -5,23 +5,36 @@ import { Bell, BellOff, Heart } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 function urlBase64ToUint8Array(base64: string) {
-  const pad  = "=".repeat((4 - (base64.length % 4)) % 4);
-  const b64  = (base64 + pad).replace(/-/g, "+").replace(/_/g, "/");
-  const raw  = atob(b64);
+  const pad = "=".repeat((4 - (base64.length % 4)) % 4);
+  const b64 = (base64 + pad).replace(/-/g, "+").replace(/_/g, "/");
+  const raw = atob(b64);
   return Uint8Array.from([...raw].map(c => c.charCodeAt(0)));
 }
 
 export default function PushNotificationButton() {
   const [status,    setStatus]    = useState<"idle"|"granted"|"denied"|"loading">("idle");
   const [supported, setSupported] = useState(false);
+  const [mounted,   setMounted]   = useState(false);
 
   useEffect(() => {
-    setSupported("serviceWorker" in navigator && "PushManager" in window);
-    if (Notification.permission === "granted") setStatus("granted");
-    if (Notification.permission === "denied")  setStatus("denied");
+    /* Cały dostęp do browser API wyłącznie w useEffect */
+    setMounted(true);
+
+    const isSupported =
+      typeof window !== "undefined" &&
+      "serviceWorker" in navigator &&
+      "PushManager" in window;
+
+    setSupported(isSupported);
+
+    if (isSupported) {
+      if (Notification.permission === "granted") setStatus("granted");
+      if (Notification.permission === "denied")  setStatus("denied");
+    }
   }, []);
 
   const subscribe = async () => {
+    if (typeof window === "undefined") return;
     setStatus("loading");
     try {
       const reg = await navigator.serviceWorker.register("/sw.js");
@@ -46,7 +59,8 @@ export default function PushNotificationButton() {
     }
   };
 
-  if (!supported) return null;
+  /* Nie renderuj nic podczas SSR ani gdy brak wsparcia */
+  if (!mounted || !supported) return null;
 
   return (
     <AnimatePresence mode="wait">
