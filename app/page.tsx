@@ -3,6 +3,7 @@ import { Suspense } from "react";
 import { Heart, Music, Sparkles } from "lucide-react";
 import Timeline from "@/components/Timeline";
 import { getAllSongs } from "@/lib/songs-db";
+import PushNotificationButton from "@/components/PushNotificationButton";
 
 export const revalidate = 0;
 
@@ -419,6 +420,7 @@ export default async function HomePage() {
           }}>
             Zrobione z całego serca — tylko dla Ciebie, Izo
           </p>
+          <PushNotificationButton />
           <div style={{
             fontFamily: "'DM Sans', sans-serif",
             fontSize: "0.6rem",
