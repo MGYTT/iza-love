@@ -61,4 +61,4 @@ export async function GET() {
   }
 
   return NextResponse.json({ timestamp: new Date().toISOString(), tests }, { status: 200 });
-}
+} 

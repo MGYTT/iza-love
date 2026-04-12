@@ -141,190 +141,176 @@ function NoteModal({ hl, word, onClose }: NoteModalProps) {
       />
 
       {/* ── Modal box ── */}
-      <motion.div
-        key={`modal-${id}`}
-        ref={modalRef}
-        role="dialog"
-        aria-modal="true"
-        aria-label={`Notatka do słowa: ${word}`}
-        tabIndex={-1}
-        initial={{ opacity: 0, scale: 0.84, y: 32 }}
-        animate={{ opacity: 1, scale: 1,    y: 0  }}
-        exit={{    opacity: 0, scale: 0.84, y: 32 }}
-        transition={{ duration: 0.36, ease: [0.16, 1, 0.3, 1] }}
-        onClick={(e) => e.stopPropagation()}
-        style={{
-          /* Kluczowe: fixed + translate — działa bez względu na rodzica */
-          position: "fixed",
-          top: "50%",
-          left: "50%",
-          transform: "translate(-50%, -50%)",
-          zIndex: 9999,
+<motion.div
+  key={`modal-${id}`}
+  ref={modalRef}
+  role="dialog"
+  aria-modal="true"
+  aria-label={`Notatka do słowa: ${word}`}
+  tabIndex={-1}
+  initial={{ opacity: 0, scale: 0.84, y: 32 }}
+  animate={{ opacity: 1, scale: 1,    y: 0  }}
+  exit={{    opacity: 0, scale: 0.84, y: 32 }}
+  transition={{ duration: 0.36, ease: [0.16, 1, 0.3, 1] }}
+  onClick={(e) => e.stopPropagation()}
+  style={{
+    /* ─ Centrowanie bez transform — działa wszędzie na iOS ─ */
+    position: "fixed",
+    inset: 0,
+    zIndex: 9999,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: "1rem",
+    pointerEvents: "none",   /* kliknięcie w "powietrze" → backdrop */
+  }}
+>
+  {/* Wewnętrzny box — tu jest faktyczna treść */}
+  <div
+    onClick={(e) => e.stopPropagation()}
+    style={{
+      pointerEvents: "auto",
+      width: "min(460px, 100%)",
+      maxHeight: "calc(100dvh - 4rem)",
+      overflowY: "auto",
+      background: "rgba(10,2,7,0.98)",
+      backdropFilter: "blur(40px)",
+      WebkitBackdropFilter: "blur(40px)",
+      border: `1px solid ${c.border}35`,
+      borderRadius: "1.6rem",
+      padding: "2.1rem 2rem 1.9rem",
+      outline: "none",
+      position: "relative",
+      boxShadow: `
+        0 40px 90px rgba(0,0,0,0.9),
+        0 0 0 1px rgba(255,255,255,0.025),
+        0 0 100px ${c.glow}18
+      `,
+    }}
+  >
+    {/* === cała reszta zawartości modalu bez zmian === */}
 
-          width: "min(460px, calc(100vw - 2rem))",
-          maxHeight: "calc(100dvh - 4rem)",
-          overflowY: "auto",
+    {/* Ambient glow blob */}
+    <div aria-hidden style={{
+      position: "absolute",
+      top: "-55px", left: "50%",
+      transform: "translateX(-50%)",
+      width: "260px", height: "150px",
+      background: `radial-gradient(ellipse, ${c.glow}16, transparent 68%)`,
+      pointerEvents: "none",
+      borderRadius: "50%",
+      zIndex: 0,
+    }} />
 
-          background: "rgba(10,2,7,0.98)",
-          backdropFilter: "blur(40px)",
-          WebkitBackdropFilter: "blur(40px)",
-          border: `1px solid ${c.border}35`,
-          borderRadius: "1.6rem",
-          padding: "2.1rem 2rem 1.9rem",
-          outline: "none",
+    {/* Close button */}
+    <button
+      onClick={onClose}
+      aria-label="Zamknij"
+      style={{
+        position: "absolute",
+        top: "1rem", right: "1rem",
+        width: "32px", height: "32px",
+        borderRadius: "50%",
+        background: "rgba(240,160,184,0.05)",
+        border: "1px solid rgba(240,160,184,0.1)",
+        display: "flex", alignItems: "center", justifyContent: "center",
+        cursor: "pointer",
+        color: "rgba(240,160,184,0.35)",
+        transition: "all 0.2s ease",
+        zIndex: 2,
+      }}
+      onMouseEnter={e => {
+        const b = e.currentTarget;
+        b.style.background  = "rgba(240,160,184,0.12)";
+        b.style.color       = "rgba(240,160,184,0.9)";
+        b.style.borderColor = "rgba(240,160,184,0.28)";
+      }}
+      onMouseLeave={e => {
+        const b = e.currentTarget;
+        b.style.background  = "rgba(240,160,184,0.05)";
+        b.style.color       = "rgba(240,160,184,0.35)";
+        b.style.borderColor = "rgba(240,160,184,0.1)";
+      }}
+    >
+      <X size={13} />
+    </button>
 
-          boxShadow: `
-            0 40px 90px rgba(0,0,0,0.9),
-            0 0 0 1px rgba(255,255,255,0.025),
-            0 0 100px ${c.glow}18
-          `,
-        }}
-      >
-        {/* Ambient glow blob */}
-        <div aria-hidden style={{
-          position: "absolute",
-          top: "-55px", left: "50%",
-          transform: "translateX(-50%)",
-          width: "260px", height: "150px",
-          background: `radial-gradient(ellipse, ${c.glow}16, transparent 68%)`,
-          pointerEvents: "none",
-          borderRadius: "50%",
-          zIndex: 0,
-        }} />
+    {/* Content */}
+    <div style={{ position: "relative", zIndex: 1 }}>
 
-        {/* ── Close button ── */}
-        <button
-          onClick={onClose}
-          aria-label="Zamknij"
-          style={{
-            position: "absolute",
-            top: "1rem", right: "1rem",
-            width: "32px", height: "32px",
-            borderRadius: "50%",
-            background: "rgba(240,160,184,0.05)",
-            border: "1px solid rgba(240,160,184,0.1)",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            cursor: "pointer",
-            color: "rgba(240,160,184,0.35)",
-            transition: "all 0.2s ease",
-            zIndex: 2,
-          }}
-          onMouseEnter={e => {
-            const b = e.currentTarget;
-            b.style.background = "rgba(240,160,184,0.12)";
-            b.style.color      = "rgba(240,160,184,0.9)";
-            b.style.borderColor = "rgba(240,160,184,0.28)";
-          }}
-          onMouseLeave={e => {
-            const b = e.currentTarget;
-            b.style.background  = "rgba(240,160,184,0.05)";
-            b.style.color       = "rgba(240,160,184,0.35)";
-            b.style.borderColor = "rgba(240,160,184,0.1)";
-          }}
+      {/* Label row */}
+      <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "1.15rem" }}>
+        <Sparkles size={11} style={{ color: c.text, flexShrink: 0 }} />
+        <span style={{
+          fontFamily: "'DM Sans', sans-serif",
+          fontSize: "0.62rem",
+          letterSpacing: "0.16em",
+          textTransform: "uppercase",
+          color: `${c.text}80`,
+        }}>
+          Osobista notatka
+        </span>
+      </div>
+
+      {/* Word chip */}
+      <div style={{
+        display: "inline-flex", alignItems: "center",
+        background: c.bg,
+        border: `1px solid ${c.border}40`,
+        borderRadius: "0.65rem",
+        padding: "0.3rem 0.9rem",
+        marginBottom: "1.25rem",
+      }}>
+        <span style={{
+          fontFamily: "'Cormorant Garamond', serif",
+          fontSize: "1.18rem", fontWeight: 600, fontStyle: "italic",
+          color: c.text, textShadow: `0 0 20px ${c.glow}`,
+        }}>
+          &bdquo;{word}&rdquo;
+        </span>
+      </div>
+
+      {/* Divider */}
+      <div style={{
+        height: "1px",
+        background: `linear-gradient(to right, transparent, ${c.border}30, transparent)`,
+        marginBottom: "1.25rem",
+      }} />
+
+      {/* Note body */}
+      <p style={{
+        fontFamily: "'Cormorant Garamond', serif",
+        fontSize: "1.22rem", fontStyle: "italic", fontWeight: 300,
+        color: "#f7cdd8", lineHeight: 1.76, margin: 0,
+        whiteSpace: "pre-wrap", wordBreak: "break-word",
+      }}>
+        &ldquo;{hl.note}&rdquo;
+      </p>
+
+      {/* Footer */}
+      <div style={{
+        marginTop: "1.5rem", paddingTop: "1rem",
+        borderTop: "1px solid rgba(240,160,184,0.06)",
+        display: "flex", alignItems: "center",
+        justifyContent: "flex-end", gap: "6px",
+      }}>
+        <motion.div
+          animate={{ scale: [1, 1.32, 1] }}
+          transition={{ repeat: Infinity, duration: 1.9, ease: "easeInOut" }}
         >
-          <X size={13} />
-        </button>
-
-        {/* ── Content ── */}
-        <div style={{ position: "relative", zIndex: 1 }}>
-
-          {/* Label row */}
-          <div style={{
-            display: "flex", alignItems: "center",
-            gap: "6px", marginBottom: "1.15rem",
-          }}>
-            <Sparkles size={11} style={{ color: c.text, flexShrink: 0 }} />
-            <span style={{
-              fontFamily: "'DM Sans', sans-serif",
-              fontSize: "0.62rem",
-              letterSpacing: "0.16em",
-              textTransform: "uppercase",
-              color: `${c.text}80`,
-            }}>
-              Osobista notatka
-            </span>
-          </div>
-
-          {/* Word chip */}
-          <div style={{
-            display: "inline-flex",
-            alignItems: "center",
-            background: c.bg,
-            border: `1px solid ${c.border}40`,
-            borderRadius: "0.65rem",
-            padding: "0.3rem 0.9rem",
-            marginBottom: "1.25rem",
-          }}>
-            <span style={{
-              fontFamily: "'Cormorant Garamond', serif",
-              fontSize: "1.18rem",
-              fontWeight: 600,
-              fontStyle: "italic",
-              color: c.text,
-              textShadow: `0 0 20px ${c.glow}`,
-            }}>
-              &bdquo;{word}&rdquo;
-            </span>
-          </div>
-
-          {/* Divider */}
-          <div style={{
-            height: "1px",
-            background: `linear-gradient(
-              to right,
-              transparent,
-              ${c.border}30,
-              transparent
-            )`,
-            marginBottom: "1.25rem",
-          }} />
-
-          {/* Note body */}
-          <p style={{
-            fontFamily: "'Cormorant Garamond', serif",
-            fontSize: "1.22rem",
-            fontStyle: "italic",
-            fontWeight: 300,
-            color: "#f7cdd8",
-            lineHeight: 1.76,
-            margin: 0,
-            whiteSpace: "pre-wrap",
-            wordBreak: "break-word",
-          }}>
-            &ldquo;{hl.note}&rdquo;
-          </p>
-
-          {/* Footer */}
-          <div style={{
-            marginTop: "1.5rem",
-            paddingTop: "1rem",
-            borderTop: "1px solid rgba(240,160,184,0.06)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "flex-end",
-            gap: "6px",
-          }}>
-            <motion.div
-              animate={{ scale: [1, 1.32, 1] }}
-              transition={{ repeat: Infinity, duration: 1.9, ease: "easeInOut" }}
-            >
-              <Heart
-                size={10}
-                fill={`${c.text}45`}
-                style={{ color: `${c.text}45` }}
-              />
-            </motion.div>
-            <span style={{
-              fontFamily: "'Cormorant Garamond', serif",
-              fontSize: "0.8rem",
-              fontStyle: "italic",
-              color: `${c.text}40`,
-            }}>
-              od Ciebie, dla Izy
-            </span>
-          </div>
-        </div>
-      </motion.div>
+          <Heart size={10} fill={`${c.text}45`} style={{ color: `${c.text}45` }} />
+        </motion.div>
+        <span style={{
+          fontFamily: "'Cormorant Garamond', serif",
+          fontSize: "0.8rem", fontStyle: "italic",
+          color: `${c.text}40`,
+        }}>
+          od Ciebie, dla Izy
+        </span>
+      </div>
+    </div>
+  </div>
+</motion.div>
     </AnimatePresence>
   );
 
