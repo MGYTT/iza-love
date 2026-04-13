@@ -4,7 +4,7 @@ import { Heart, Music, Sparkles } from "lucide-react";
 import Timeline from "@/components/Timeline";
 import { getAllSongs } from "@/lib/songs-db";
 import PushNotificationButton from "@/components/PushNotificationButton";
-import DaysTogether from "@/components/DaysTogether";
+import DaysCounter from "@/components/DaysCounter";
 
 export const revalidate = 0;
 
@@ -27,7 +27,6 @@ export default async function HomePage() {
     (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
   );
 
-  /* Najwcześniejsza data wspomnienia jako "data początku" */
   const firstDate = "2023-02-03";
 
   return (
@@ -50,14 +49,10 @@ export default async function HomePage() {
 
         {/* ── Background glows ── */}
         <div aria-hidden style={{ position: "absolute", inset: 0, pointerEvents: "none", zIndex: 0 }}>
-          {/* top center gold */}
           <div style={{ position: "absolute", top: "-8%", left: "50%", transform: "translateX(-50%)", width: "800px", height: "500px", background: "radial-gradient(ellipse, rgba(212,168,83,0.11) 0%, transparent 65%)", filter: "blur(40px)" }} />
-          {/* mid pink */}
           <div style={{ position: "absolute", top: "35%", left: "50%", transform: "translateX(-50%)", width: "700px", height: "500px", background: "radial-gradient(ellipse, rgba(240,100,140,0.07) 0%, transparent 65%)", filter: "blur(60px)" }} />
-          {/* side accents */}
           <div style={{ position: "absolute", top: "25%", left: "-8%", width: "320px", height: "320px", background: "radial-gradient(circle, rgba(212,168,83,0.06) 0%, transparent 70%)", filter: "blur(50px)" }} />
           <div style={{ position: "absolute", top: "45%", right: "-8%", width: "320px", height: "320px", background: "radial-gradient(circle, rgba(240,160,184,0.06) 0%, transparent 70%)", filter: "blur(50px)" }} />
-          {/* subtle star particles */}
           {["15% 20%", "80% 15%", "70% 75%", "20% 80%", "90% 50%"].map((pos, i) => (
             <div key={i} style={{
               position: "absolute",
@@ -189,28 +184,8 @@ export default async function HomePage() {
 
             <div style={{ width: "1px", alignSelf: "stretch", background: "rgba(240,160,184,0.1)" }} />
 
-            {/* Dni razem */}
-            <div style={{ flex: 1, textAlign: "center", padding: "0 1.5rem" }}>
-              <div style={{
-                fontFamily: "'Cormorant Garamond', serif",
-                fontSize: "2.4rem",
-                fontWeight: 400,
-                color: "#d4a853",
-                lineHeight: 1,
-                marginBottom: "5px",
-              }}>
-                <DaysTogether startDate={firstDate} />
-              </div>
-              <div style={{
-                fontFamily: "'DM Sans', sans-serif",
-                fontSize: "0.6rem",
-                letterSpacing: "0.18em",
-                textTransform: "uppercase",
-                color: "rgba(240,160,184,0.32)",
-              }}>
-                Dni razem
-              </div>
-            </div>
+            {/* ✅ Dni razem — teraz z triggerem do /love */}
+            <DaysCounter startDate={firstDate} />
 
             <div style={{ width: "1px", alignSelf: "stretch", background: "rgba(240,160,184,0.1)" }} />
 
@@ -257,7 +232,6 @@ export default async function HomePage() {
             }}>
               Odkrywaj
             </span>
-            {/* Animated chevrons */}
             <div style={{ display: "flex", flexDirection: "column", gap: "2px", animation: "floatDown 2.4s ease-in-out infinite" }}>
               <div style={{ width: "10px", height: "1px", background: "rgba(212,168,83,0.4)", transform: "rotate(35deg) translateX(3px)" }} />
               <div style={{ width: "10px", height: "1px", background: "rgba(212,168,83,0.25)", transform: "rotate(35deg) translateX(3px)" }} />
@@ -279,7 +253,6 @@ export default async function HomePage() {
         padding: "5rem 1rem 1.5rem",
         position: "relative",
       }}>
-        {/* Ikona nad tytułem */}
         <div style={{
           display: "inline-flex",
           alignItems: "center",
@@ -381,7 +354,6 @@ export default async function HomePage() {
         borderTop: "1px solid rgba(240,160,184,0.06)",
         position: "relative",
       }}>
-        {/* Glow */}
         <div aria-hidden style={{
           position: "absolute",
           top: 0, left: "50%",
@@ -427,7 +399,6 @@ export default async function HomePage() {
       </footer>
 
       <style>{`
-        /* ── Animations ── */
         @keyframes shimmer {
           to { background-position: 200% center; }
         }
@@ -454,18 +425,12 @@ export default async function HomePage() {
           0%, 100% { opacity: 0.5; }
           50%       { opacity: 1;   }
         }
-
-        /* ── Hero entrance ── */
         .hero-content {
           animation: fadeSlideUp 1.1s cubic-bezier(0.16, 1, 0.3, 1) 0.15s both;
         }
-
-        /* ── Skeleton ── */
         .skeleton-pulse {
           animation: skeleton-pulse 1.8s ease-in-out infinite;
         }
-
-        /* ── Scrollbar global ── */
         ::-webkit-scrollbar { width: 4px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb {
