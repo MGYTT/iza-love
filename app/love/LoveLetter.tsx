@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Heart, ArrowLeft } from "lucide-react";
+import Link from "next/link";
 
 const PARAGRAPHS = [
   {
@@ -38,16 +39,20 @@ const HEARTS = Array.from({ length: 18 }, (_, i) => ({
   opacity: 0.06 + (i % 4) * 0.025,
 }));
 
+/* Opóźnienie pojawienia się linku "czytaj dalej" */
+const NEXT_LINK_DELAY = 4000;
+
 export default function LoveLetter() {
   const router = useRouter();
   const [visible, setVisible] = useState(false);
   const [heartsVisible, setHeartsVisible] = useState(false);
+  const [showNext, setShowNext] = useState(false);
 
   useEffect(() => {
-    // Małe opóźnienie dla efektu dramatyczności
     const t1 = setTimeout(() => setHeartsVisible(true), 100);
     const t2 = setTimeout(() => setVisible(true), 400);
-    return () => { clearTimeout(t1); clearTimeout(t2); };
+    const t3 = setTimeout(() => setShowNext(true), NEXT_LINK_DELAY);
+    return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
   }, []);
 
   return (
@@ -277,9 +282,7 @@ export default function LoveLetter() {
                   }}
                   style={{
                     position: "relative", zIndex: 1,
-                    fontFamily: p.opening
-                      ? "'Cormorant Garamond', Georgia, serif"
-                      : "'Cormorant Garamond', Georgia, serif",
+                    fontFamily: "'Cormorant Garamond', Georgia, serif",
                     fontSize: p.opening
                       ? "clamp(1.1rem, 2.5vw, 1.3rem)"
                       : p.closing
@@ -401,6 +404,85 @@ export default function LoveLetter() {
         }}
       />
 
+      {/* ══════════════════════════════
+          LINK DO /reasons — pojawia się po 4s
+      ══════════════════════════════ */}
+      <AnimatePresence>
+        {showNext && (
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
+            style={{
+              position: "relative", zIndex: 1,
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              gap: "1rem",
+              marginTop: "1rem",
+              paddingBottom: "2rem",
+            }}
+          >
+            {/* Dekoracyjna gwiazdka */}
+            <span style={{
+              fontSize: "0.5rem",
+              letterSpacing: "0.3em",
+              color: "rgba(212,168,83,0.25)",
+            }}>
+              ✦ ✦ ✦
+            </span>
+
+            <Link
+              href="/reasons"
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "8px",
+                fontFamily: "'Cormorant Garamond', Georgia, serif",
+                fontSize: "clamp(0.85rem, 2vw, 1rem)",
+                fontStyle: "italic",
+                letterSpacing: "0.08em",
+                color: "rgba(212,168,83,0.4)",
+                textDecoration: "none",
+                padding: "0.6rem 1.4rem",
+                border: "1px solid rgba(212,168,83,0.12)",
+                borderRadius: "999px",
+                background: "rgba(212,168,83,0.03)",
+                transition: "all 0.35s cubic-bezier(0.16, 1, 0.3, 1)",
+              }}
+              onMouseEnter={e => {
+                const el = e.currentTarget;
+                el.style.color = "rgba(212,168,83,0.85)";
+                el.style.borderColor = "rgba(212,168,83,0.3)";
+                el.style.background = "rgba(212,168,83,0.07)";
+                el.style.gap = "12px";
+              }}
+              onMouseLeave={e => {
+                const el = e.currentTarget;
+                el.style.color = "rgba(212,168,83,0.4)";
+                el.style.borderColor = "rgba(212,168,83,0.12)";
+                el.style.background = "rgba(212,168,83,0.03)";
+                el.style.gap = "8px";
+              }}
+            >
+              jest jeszcze coś dla Ciebie
+              <span style={{ fontSize: "0.75em", transition: "transform 0.3s" }}>→</span>
+            </Link>
+
+            <p style={{
+              fontFamily: "'DM Sans', sans-serif",
+              fontSize: "0.58rem",
+              letterSpacing: "0.18em",
+              textTransform: "uppercase",
+              color: "rgba(240,160,184,0.18)",
+            }}>
+              22 powody
+            </p>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <style>{`
         @keyframes heartbeat {
           0%, 100% { transform: scale(1); }
@@ -413,7 +495,7 @@ export default function LoveLetter() {
           to { background-position: 200% center; }
         }
         @media (max-width: 500px) {
-          /* Mniejszy padding na mobile */
+          /* padding już obsługuje clamp */
         }
       `}</style>
     </main>
