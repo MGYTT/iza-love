@@ -4,7 +4,62 @@ import { useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 
-const REASONS = [
+/* ── GSAP types (CDN-loaded) ── */
+interface GSAPScrollTriggerVars {
+  trigger: Element | null;
+  start: string;
+  end?: string;
+  scrub?: number | boolean;
+  toggleActions?: string;
+}
+
+interface GSAPVars {
+  opacity?: number;
+  x?: number;
+  y?: number;
+  scale?: number;
+  rotation?: number;
+  scaleX?: number;
+  transformOrigin?: string;
+  duration?: number;
+  delay?: number;
+  ease?: string;
+  stagger?: number;
+  repeat?: number;
+  yoyo?: boolean;
+  scrollTrigger?: GSAPScrollTriggerVars;
+}
+
+interface GSAPStatic {
+  registerPlugin: (...args: unknown[]) => void;
+  from: (targets: string | Element | NodeList | null, vars: GSAPVars) => void;
+  to: (targets: string | Element | NodeList | null, vars: GSAPVars) => void;
+}
+
+interface ScrollTriggerInstance {
+  kill: () => void;
+}
+
+interface ScrollTriggerStatic {
+  getAll: () => ScrollTriggerInstance[];
+}
+
+declare global {
+  interface Window {
+    gsap: GSAPStatic;
+    ScrollTrigger: ScrollTriggerStatic;
+  }
+}
+
+/* ── Data ── */
+interface Reason {
+  number: string;
+  text: string;
+  emoji: string;
+  isFinal?: boolean;
+}
+
+const REASONS: Reason[] = [
   { number: "01", text: "Ma piękny uśmiech", emoji: "😊" },
   { number: "02", text: "Ma poczucie humoru", emoji: "😂" },
   { number: "03", text: "Jest piękna", emoji: "✨" },
@@ -34,6 +89,22 @@ const REASONS = [
   },
 ];
 
+/* ── Helpers ── */
+function loadScript(src: string): Promise<void> {
+  return new Promise<void>((resolve, reject) => {
+    if (document.querySelector(`script[src="${src}"]`)) {
+      resolve();
+      return;
+    }
+    const s = document.createElement("script");
+    s.src = src;
+    s.onload = () => resolve();
+    s.onerror = () => reject(new Error(`Failed to load script: ${src}`));
+    document.head.appendChild(s);
+  });
+}
+
+/* ── Component ── */
 export default function ReasonsClient() {
   const router = useRouter();
   const containerRef = useRef<HTMLDivElement>(null);
@@ -43,17 +114,14 @@ export default function ReasonsClient() {
     if (hasInit.current) return;
     hasInit.current = true;
 
-    // Dynamically load GSAP + ScrollTrigger from CDN
-    const loadGSAP = async () => {
+    const initGSAP = async () => {
       await loadScript("https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js");
       await loadScript("https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js");
 
-      const gsap = (window as any).gsap;
-      const ScrollTrigger = (window as any).ScrollTrigger;
-
+      const { gsap, ScrollTrigger } = window;
       gsap.registerPlugin(ScrollTrigger);
 
-      // ── Hero entrance
+      /* ── Hero entrance ── */
       gsap.from(".reasons-hero-line", {
         opacity: 0,
         y: 60,
@@ -71,14 +139,14 @@ export default function ReasonsClient() {
         ease: "power2.out",
       });
 
-      // ── Each reason card
-      const cards = document.querySelectorAll(".reason-card");
+      /* ── Reason cards ── */
+      const cards = document.querySelectorAll<HTMLElement>(".reason-card");
+
       cards.forEach((card, i) => {
         const isFinal = card.classList.contains("reason-final");
         const fromLeft = i % 2 === 0;
 
-        // Number counter
-        const numEl = card.querySelector(".reason-num") as HTMLElement;
+        const numEl = card.querySelector<HTMLElement>(".reason-num");
         if (numEl) {
           gsap.from(numEl, {
             scrollTrigger: {
@@ -93,8 +161,7 @@ export default function ReasonsClient() {
           });
         }
 
-        // Main text
-        const textEl = card.querySelector(".reason-text") as HTMLElement;
+        const textEl = card.querySelector<HTMLElement>(".reason-text");
         if (textEl) {
           gsap.from(textEl, {
             scrollTrigger: {
@@ -110,8 +177,7 @@ export default function ReasonsClient() {
           });
         }
 
-        // Emoji
-        const emojiEl = card.querySelector(".reason-emoji") as HTMLElement;
+        const emojiEl = card.querySelector<HTMLElement>(".reason-emoji");
         if (emojiEl) {
           gsap.from(emojiEl, {
             scrollTrigger: {
@@ -128,7 +194,6 @@ export default function ReasonsClient() {
           });
         }
 
-        // Final card — special
         if (isFinal) {
           gsap.from(card, {
             scrollTrigger: {
@@ -143,7 +208,6 @@ export default function ReasonsClient() {
             ease: "power4.out",
           });
 
-          // Pulsing heart after reveal
           gsap.to(".final-heart", {
             scrollTrigger: {
               trigger: card,
@@ -158,8 +222,7 @@ export default function ReasonsClient() {
           });
         }
 
-        // Divider line
-        const line = card.querySelector(".reason-line") as HTMLElement;
+        const line = card.querySelector<HTMLElement>(".reason-line");
         if (line) {
           gsap.from(line, {
             scrollTrigger: {
@@ -175,7 +238,7 @@ export default function ReasonsClient() {
         }
       });
 
-      // ── Parallax on ambient glows
+      /* ── Parallax glows ── */
       gsap.to(".glow-top", {
         scrollTrigger: {
           trigger: containerRef.current,
@@ -199,11 +262,12 @@ export default function ReasonsClient() {
       });
     };
 
-    loadGSAP();
+    initGSAP().catch(console.error);
 
     return () => {
-      const ScrollTrigger = (window as any).ScrollTrigger;
-      if (ScrollTrigger) ScrollTrigger.getAll().forEach((t: any) => t.kill());
+      if (window.ScrollTrigger) {
+        window.ScrollTrigger.getAll().forEach((t) => t.kill());
+      }
     };
   }, []);
 
@@ -250,19 +314,19 @@ export default function ReasonsClient() {
           zIndex: 50,
         }}
         onMouseEnter={e => {
-          (e.currentTarget).style.color = "rgba(212,168,83,0.9)";
-          (e.currentTarget).style.borderColor = "rgba(212,168,83,0.35)";
+          e.currentTarget.style.color = "rgba(212,168,83,0.9)";
+          e.currentTarget.style.borderColor = "rgba(212,168,83,0.35)";
         }}
         onMouseLeave={e => {
-          (e.currentTarget).style.color = "rgba(212,168,83,0.5)";
-          (e.currentTarget).style.borderColor = "rgba(212,168,83,0.15)";
+          e.currentTarget.style.color = "rgba(212,168,83,0.5)";
+          e.currentTarget.style.borderColor = "rgba(212,168,83,0.15)";
         }}
       >
         <ArrowLeft size={11} /> Wróć
       </button>
 
       {/* ════════════════════════════
-          HERO SECTION
+          HERO
       ════════════════════════════ */}
       <section style={{
         minHeight: "100svh",
@@ -276,7 +340,6 @@ export default function ReasonsClient() {
         zIndex: 1,
       }}>
 
-        {/* Top decoration line */}
         <div style={{
           position: "absolute", top: 0, left: "50%",
           transform: "translateX(-50%)",
@@ -284,7 +347,6 @@ export default function ReasonsClient() {
           background: "linear-gradient(to bottom, transparent, rgba(212,168,83,0.4))",
         }} />
 
-        {/* Eyebrow */}
         <div className="reasons-hero-line" style={{
           display: "inline-flex", alignItems: "center", gap: "10px",
           marginBottom: "3rem",
@@ -304,7 +366,6 @@ export default function ReasonsClient() {
           </span>
         </div>
 
-        {/* Main title */}
         <div style={{ marginBottom: "2rem" }}>
           <h1 className="reasons-hero-line" style={{
             fontFamily: "'Cormorant Garamond', Georgia, serif",
@@ -345,11 +406,10 @@ export default function ReasonsClient() {
           marginBottom: "5rem",
         }}>
           22 powody, które mogłyby zapełnić całe niebo.
-          <br/>
+          <br />
           Ale wybrałem te, które znam na pamięć.
         </p>
 
-        {/* Scroll hint */}
         <div className="reasons-scroll-hint" style={{
           display: "flex",
           flexDirection: "column",
@@ -365,17 +425,27 @@ export default function ReasonsClient() {
           }}>
             Przewiń
           </span>
-          <div style={{ display: "flex", flexDirection: "column", gap: "3px", animation: "floatDown 2s ease-in-out infinite" }}>
-            {[0,1].map(i => (
+          <div style={{
+            display: "flex", flexDirection: "column", gap: "3px",
+            animation: "floatDown 2s ease-in-out infinite",
+          }}>
+            {[0, 1].map(i => (
               <div key={i} style={{ display: "flex", gap: "3px" }}>
-                <div style={{ width: "8px", height: "1px", background: `rgba(212,168,83,${i === 0 ? 0.4 : 0.2})`, transform: "rotate(35deg) translateX(2px)" }} />
-                <div style={{ width: "8px", height: "1px", background: `rgba(212,168,83,${i === 0 ? 0.4 : 0.2})`, transform: "rotate(-35deg)" }} />
+                <div style={{
+                  width: "8px", height: "1px",
+                  background: `rgba(212,168,83,${i === 0 ? 0.4 : 0.2})`,
+                  transform: "rotate(35deg) translateX(2px)",
+                }} />
+                <div style={{
+                  width: "8px", height: "1px",
+                  background: `rgba(212,168,83,${i === 0 ? 0.4 : 0.2})`,
+                  transform: "rotate(-35deg)",
+                }} />
               </div>
             ))}
           </div>
         </div>
 
-        {/* Bottom line */}
         <div style={{
           position: "absolute", bottom: 0, left: "50%",
           transform: "translateX(-50%)",
@@ -394,15 +464,13 @@ export default function ReasonsClient() {
         position: "relative",
         zIndex: 1,
       }}>
-
         {REASONS.map((reason, i) => {
           const fromLeft = i % 2 === 0;
-          const isFinal = (reason as any).isFinal;
 
-          if (isFinal) {
+          if (reason.isFinal) {
             return (
               <div
-                key={i}
+                key={reason.number}
                 className="reason-card reason-final"
                 style={{
                   marginTop: "8rem",
@@ -416,7 +484,6 @@ export default function ReasonsClient() {
                   boxShadow: "0 0 60px rgba(212,168,83,0.05), 0 20px 60px rgba(0,0,0,0.4)",
                 }}
               >
-                {/* Inner glow */}
                 <div aria-hidden style={{
                   position: "absolute", top: "-30%", left: "50%",
                   transform: "translateX(-50%)",
@@ -464,7 +531,7 @@ export default function ReasonsClient() {
 
           return (
             <div
-              key={i}
+              key={reason.number}
               className="reason-card"
               style={{
                 display: "flex",
@@ -475,7 +542,6 @@ export default function ReasonsClient() {
                 textAlign: fromLeft ? "left" : "right",
               }}
             >
-              {/* Number */}
               <div className="reason-num" style={{
                 fontFamily: "'Cormorant Garamond', Georgia, serif",
                 fontSize: "clamp(3.5rem, 7vw, 5.5rem)",
@@ -491,9 +557,7 @@ export default function ReasonsClient() {
                 {reason.number}
               </div>
 
-              {/* Content */}
               <div style={{ flex: 1, paddingTop: "0.5rem" }}>
-                {/* Divider line */}
                 <div className="reason-line" style={{
                   height: "1px",
                   background: fromLeft
@@ -546,13 +610,11 @@ export default function ReasonsClient() {
           50% { transform: translateY(8px); opacity: 1; }
         }
 
-        /* iOS smooth scroll */
         html {
           scroll-behavior: smooth;
           -webkit-overflow-scrolling: touch;
         }
 
-        /* Scrollbar */
         ::-webkit-scrollbar { width: 3px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb {
@@ -560,7 +622,6 @@ export default function ReasonsClient() {
           border-radius: 999px;
         }
 
-        /* Mobile adjustments */
         @media (max-width: 600px) {
           .reason-card {
             flex-direction: column !important;
@@ -575,18 +636,4 @@ export default function ReasonsClient() {
       `}</style>
     </div>
   );
-}
-
-function loadScript(src: string): Promise<void> {
-  return new Promise((resolve, reject) => {
-    if (document.querySelector(`script[src="${src}"]`)) {
-      resolve();
-      return;
-    }
-    const s = document.createElement("script");
-    s.src = src;
-    s.onload = () => resolve();
-    s.onerror = reject;
-    document.head.appendChild(s);
-  });
 }
